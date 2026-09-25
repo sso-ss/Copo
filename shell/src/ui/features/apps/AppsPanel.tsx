@@ -10,6 +10,7 @@ export function AppsPanel(): JSX.Element {
     refresh,
     toggleClaudeCode,
     toggleClaudeDesktop,
+    toggleCodex,
   } = useApps();
 
   return (
@@ -32,7 +33,9 @@ export function AppsPanel(): JSX.Element {
               onToggle={
                 app.id === "claude-desktop"
                   ? (enabled) => toggleClaudeDesktop(enabled)
-                  : (enabled) => toggleClaudeCode(enabled)
+                  : app.id === "codex"
+                    ? (enabled) => toggleCodex(enabled)
+                    : (enabled) => toggleClaudeCode(enabled)
               }
             />
           ))}

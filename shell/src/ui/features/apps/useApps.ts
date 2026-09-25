@@ -27,6 +27,7 @@ interface UseApps {
   refresh: () => Promise<void>;
   toggleClaudeCode: (enabled: boolean) => Promise<MutationResult>;
   toggleClaudeDesktop: (enabled: boolean) => Promise<MutationResult>;
+  toggleCodex: (enabled: boolean) => Promise<MutationResult>;
 }
 
 function sortAlpha(apps: Array<AppEntry>): Array<AppEntry> {
@@ -113,6 +114,30 @@ export function useApps(): UseApps {
     [splice],
   );
 
+  const toggleCodex = useCallback<UseApps["toggleCodex"]>(
+    async (enabled) => {
+      const result = await apiCall(
+        {
+          kind: "codex-toggle",
+          method: "POST",
+          path: "/settings/api/apps/codex/toggle",
+          body: { enabled },
+        },
+        { timeoutMs: 45000 },
+      );
+      if (!result.ok) {
+        const message = humanize(result.error);
+        setError(message);
+        await refresh();
+        return { ok: false, error: message };
+      }
+      setError(null);
+      splice(result.data);
+      return { ok: true };
+    },
+    [refresh, splice],
+  );
+
   return {
     apps,
     isLoading,
@@ -120,5 +145,6 @@ export function useApps(): UseApps {
     refresh,
     toggleClaudeCode,
     toggleClaudeDesktop,
+    toggleCodex,
   };
 }
