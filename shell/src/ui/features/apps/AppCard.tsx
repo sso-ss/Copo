@@ -142,15 +142,9 @@ export function AppCard({
         </div>
       </header>
 
-      {app.id === "codex" && app.routing && (
+      {(app.id === "codex" || app.id === "codex-desktop") && app.routing &&
+        (app.routing.notice || (app.routing.managed && !app.enabled)) && (
         <div className="app-card__install">
-          <p className="app-card__hint" role="status">
-            {toggling
-              ? "Updating Codex routing…"
-              : app.enabled
-                ? "Start a new Codex session to use Maximal."
-                : "Enabling sends a short request to verify routing. Switching off restores your previous settings."}
-          </p>
           {app.routing.notice && (
             <p className="app-card__hint" role="status">
               {app.routing.notice}
@@ -213,9 +207,9 @@ export function AppCard({
         (notInstalled ? (
           <p className="app-card__hint">Not installed.</p>
         ) : (
-          app.installs[0] && (
-            <p className="app-card__hint mono">{app.installs[0].path}</p>
-          )
+          app.installs.map((install) => (
+            <p key={install.path} className="app-card__hint mono">{install.path}</p>
+          ))
         ))}
 
       {/* Enable was refused (e.g. a base URL we don't own). Explain it and

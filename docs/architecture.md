@@ -113,7 +113,7 @@ See also: `docs/codegen-feedback-loops-practices.md` → Dispatch and review loo
 
 ## Tauri shell
 
-Codex CLI's Settings → Apps integration lives in `src/apps/codex/` and uses
+Codex CLI and Desktop's Settings → Apps integrations lives in `src/apps/codex/` and use
 command-backed authentication, reversible TOML edits, and a Responses request
 before enabling. See [`dev/codex-integration.md`](dev/codex-integration.md) for
 ownership, profile precedence, and verification behavior.

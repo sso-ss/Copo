@@ -27,7 +27,7 @@ interface UseApps {
   refresh: () => Promise<void>;
   toggleClaudeCode: (enabled: boolean) => Promise<MutationResult>;
   toggleClaudeDesktop: (enabled: boolean) => Promise<MutationResult>;
-  toggleCodex: (enabled: boolean) => Promise<MutationResult>;
+  toggleCodex: (enabled: boolean, desktop?: boolean) => Promise<MutationResult>;
 }
 
 function sortAlpha(apps: Array<AppEntry>): Array<AppEntry> {
@@ -70,7 +70,14 @@ export function useApps(): UseApps {
   // Replace one app's state with the fresh object the mutation returned.
   const splice = useCallback((fresh: AppEntry) => {
     setApps((prev) =>
-      sortAlpha(prev.map((app) => (app.id === fresh.id ? fresh : app))),
+      sortAlpha(prev.map((app) => {
+        if (app.id === fresh.id) return fresh;
+        if ((fresh.id === "codex" || fresh.id === "codex-desktop") &&
+            (app.id === "codex" || app.id === "codex-desktop")) {
+          return { ...app, enabled: fresh.enabled, routing: fresh.routing };
+        }
+        return app;
+      })),
     );
   }, []);
 
@@ -115,9 +122,14 @@ export function useApps(): UseApps {
   );
 
   const toggleCodex = useCallback<UseApps["toggleCodex"]>(
-    async (enabled) => {
+    async (enabled, desktop = false) => {
       const result = await apiCall(
-        {
+        desktop ? {
+          kind: "codex-desktop-toggle",
+          method: "POST",
+          path: "/settings/api/apps/codex-desktop/toggle",
+          body: { enabled },
+        } : {
           kind: "codex-toggle",
           method: "POST",
           path: "/settings/api/apps/codex/toggle",
@@ -133,6 +145,7 @@ export function useApps(): UseApps {
       }
       setError(null);
       splice(result.data);
+      await refresh();
       return { ok: true };
     },
     [refresh, splice],

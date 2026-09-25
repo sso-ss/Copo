@@ -1,7 +1,8 @@
-# Codex CLI routing
+# Codex CLI and desktop routing
 
-Settings → Apps → Codex CLI detects the CLI on PATH and in common install
-locations. Install a current Codex CLI and connect your account in Maximal
+Settings → Apps → Codex CLI and Desktop uses one switch for both clients.
+It detects the CLI on PATH and in common install locations, as well as supported
+macOS desktop installs. Install either client and connect your account in Maximal
 before switching routing on. Apps uses the model saved in your Codex
 configuration without displaying or changing it. If that model is missing or
 unsupported, configure a supported model in Codex and try again.
@@ -17,6 +18,28 @@ The integration is also registered as `maximal app codex` (status),
 uses the configured model and the same verification as Settings. Uninstall
 calls the same ownership-aware removal. Routing remains configured while
 Maximal is stopped; switch it off before using Codex without Maximal.
+
+## Desktop
+
+The combined entry detects macOS installs of `Codex.app` and
+`ChatGPT.app` in `/Applications` and `~/Applications`. A ChatGPT install must
+contain the bundled Codex executable; older chat-only apps do not qualify.
+Desktop detection on Windows and Linux is not implemented.
+
+Desktop and CLI share the same user configuration and therefore the same
+routing state. One switch controls both and lists their detected install paths.
+Enabling uses the same verification, authentication helper, and restoration metadata. Disabling
+restores the settings from before the first enable; it does not save a second
+backup of already-routed settings. Restart the desktop app and create a new
+local chat after toggling. Existing chats can retain their provider and model;
+remote/cloud chats and explicit overrides are outside this toggle.
+
+`maximal app codex --enable` and `--disable` expose the same behavior.
+The earlier desktop API endpoint remains compatible, but the Apps list and CLI
+command list expose only the combined integration.
+The integration uses the shared `codex` API client key. Maximal and the desktop
+app must use the same `CODEX_HOME` (normally `~/.codex`); a custom environment
+setting in a terminal does not change an app launched from Finder.
 
 ## Configuration and ownership
 
@@ -69,6 +92,7 @@ integration writes none of these competing authentication settings.
 
 ## Validation scope
 
-No tests were added or run for this change. The routing check is implemented
-as part of enabling the integration; development checks do not invoke it or
-change the developer's Codex configuration.
+Desktop detection is tested with temporary app bundles. Routing restoration
+tests use in-memory TOML, including repeated enable and user edits made while
+routing is active. The live routing check runs when enabling the integration;
+development checks do not change the developer's Codex configuration.

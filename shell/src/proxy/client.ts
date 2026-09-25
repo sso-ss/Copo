@@ -102,7 +102,7 @@ interface ActiveApiClientsResponse {
  * settings-types are not present in this worktree, so importing them
  * would break the typecheck. Mirror by name, not by import.
  */
-export type AppId = "claude-code" | "claude-desktop" | "codex" | "copilot-cli"
+export type AppId = "claude-code" | "claude-desktop" | "codex" | "codex-desktop" | "copilot-cli"
 export type AppKind = "config" | "coming-soon"
 export type AppStatus = "ready" | "not-installed" | "coming-soon"
 
@@ -270,6 +270,12 @@ type Endpoint =
       body: { enabled: boolean; model?: string }
     }
   | {
+      kind: "codex-desktop-toggle"
+      method: "POST"
+      path: "/settings/api/apps/codex-desktop/toggle"
+      body: { enabled: boolean; model?: string }
+    }
+  | {
       kind: "claude-desktop-toggle"
       method: "POST"
       path: "/settings/api/apps/claude-desktop/toggle"
@@ -300,6 +306,7 @@ interface ResponseFor {
   "claude-code-toggle": AppEntry
   "claude-desktop-toggle": AppEntry
   "codex-toggle": AppEntry
+  "codex-desktop-toggle": AppEntry
   "models-list": ModelsListResponse
   "models-refresh": ModelsListResponse
 }

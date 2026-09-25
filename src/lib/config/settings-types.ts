@@ -354,7 +354,13 @@ export const AppInstallHint = z.object({
 export type AppInstallHint = z.infer<typeof AppInstallHint>
 
 export const AppEntry = z.object({
-  id: z.enum(["claude-code", "claude-desktop", "codex", "copilot-cli"]),
+  id: z.enum([
+    "claude-code",
+    "claude-desktop",
+    "codex",
+    "codex-desktop",
+    "copilot-cli",
+  ]),
   name: z.string(),
   kind: z.enum(["config", "coming-soon"]),
   /** Whether the integration is currently active (proxy config applied). */

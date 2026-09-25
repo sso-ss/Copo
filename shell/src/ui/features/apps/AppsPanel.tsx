@@ -33,8 +33,8 @@ export function AppsPanel(): JSX.Element {
               onToggle={
                 app.id === "claude-desktop"
                   ? (enabled) => toggleClaudeDesktop(enabled)
-                  : app.id === "codex"
-                    ? (enabled) => toggleCodex(enabled)
+                  : app.id === "codex" || app.id === "codex-desktop"
+                    ? (enabled) => toggleCodex(enabled, app.id === "codex-desktop")
                     : (enabled) => toggleClaudeCode(enabled)
               }
             />

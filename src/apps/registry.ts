@@ -2,13 +2,14 @@ import type { ClientApp } from "./index"
 
 import { claudeCodeApp } from "./claude-code"
 import { claudeDesktopApp } from "./claude-desktop"
-import { codexApp } from "./codex"
+import { codexApp, codexDesktopApp } from "./codex"
 import { copilotCliApp } from "./copilot-cli"
 
 const apps: Record<string, ClientApp> = {
   "claude-code": claudeCodeApp,
   "claude-desktop": claudeDesktopApp,
   codex: codexApp,
+  "codex-desktop": codexDesktopApp,
   "copilot-cli": copilotCliApp,
 }
 

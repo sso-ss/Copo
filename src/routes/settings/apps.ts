@@ -52,32 +52,34 @@ function persistClaudeDesktop(enabled: boolean): void {
 
 export const appsRoutes = new Hono()
 
-appsRoutes.post("/codex/toggle", async (c) => {
-  try {
-    const parsed = CodexToggleRequest.safeParse(
-      await c.req.json().catch(() => null),
-    )
-    if (!parsed.success)
-      throw httpError("Expected { enabled: boolean, model?: string }", 400)
-    const app = getApp("codex")
-    if (!app) throw httpError("App not found", 404)
+for (const id of ["codex", "codex-desktop"] as const) {
+  appsRoutes.post(`/${id}/toggle`, async (c) => {
     try {
-      await (parsed.data.enabled ?
-        app.enable({ model: parsed.data.model })
-      : app.disable())
-    } catch (error) {
-      throw httpError(
-        error instanceof Error ?
-          error.message
-        : "Could not change Codex routing.",
-        409,
+      const parsed = CodexToggleRequest.safeParse(
+        await c.req.json().catch(() => null),
       )
+      if (!parsed.success)
+        throw httpError("Expected { enabled: boolean, model?: string }", 400)
+      const app = getApp(id)
+      if (!app) throw httpError("App not found", 404)
+      try {
+        await (parsed.data.enabled ?
+          app.enable({ model: parsed.data.model })
+        : app.disable())
+      } catch (error) {
+        throw httpError(
+          error instanceof Error ?
+            error.message
+          : "Could not change Codex routing.",
+          409,
+        )
+      }
+      return jsonApp(c, await app.getDetails())
+    } catch (error) {
+      return forwardError(c, error)
     }
-    return jsonApp(c, await app.getDetails())
-  } catch (error) {
-    return forwardError(c, error)
-  }
-})
+  })
+}
 
 appsRoutes.get("/", async (c) => {
   try {
