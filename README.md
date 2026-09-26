@@ -1,16 +1,27 @@
 # CoPo
 
-A little companion for your AI tools.
+[English](README.md) | [한국어](README.ko.md)
 
-<img src="shell/src-tauri/icons/128x128.png" alt="CoPo cheese icon" width="80" height="80">
+**CoPo = Connection Point**
 
-CoPo brings Claude Code, Claude Desktop, and local Codex sessions together
-through your GitHub Copilot account. It runs a local gateway and gives you a
-desktop cat that works alongside you, celebrates completed tasks, and reacts
-when something needs attention.
+*“The connection point where tools meet models.”*
 
-Manage your tools, models, account, and usage in one place, with warm neutral
-colors, rounded controls, and a companion you can make your own.
+<img src="shell/ui/companion/artwork/cat-idle.png" alt="CoPo's cat mascot" width="120">
+
+CoPo connects your AI tools to models through one local gateway. Today, it
+connects Claude Code, Claude Desktop, and local Codex sessions through your
+GitHub Copilot account, with tools, models, accounts, and usage managed in
+one place.
+
+Formerly **ModelRelay**, the app was renamed **CoPo** to reflect a broader
+vision: a connection point that can grow beyond Copilot to support more
+tools and model providers. GitHub Copilot is the current provider; broader
+provider support is a direction for the project.
+
+The **cat is CoPo's mascot** and your desktop companion. It works alongside
+you, celebrates completed tasks, and reacts when something needs attention.
+Warm neutral colors, rounded controls, and a companion you can personalize
+make CoPo feel at home on your desktop.
 
 **Status:** pre-alpha, version 0.1.0. Local task monitoring is implemented for
 Claude Code and Codex; full live acceptance testing of the packaged app is
