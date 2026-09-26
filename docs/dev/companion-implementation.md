@@ -233,6 +233,35 @@ before browser access could execute.
   TypeScript, and knip passed. The release build is staged separately from the
   running Desktop app; live UI and connection checks remain blocked.
 
+### Claude Code 2.1.283 settings validation
+
+- Claude Code 2.1.283 rejects an entire settings source when it finds
+  `PreToolUse` or `PermissionRequest` keys outside the supported `hooks` block.
+  CoPo's original `_copoTaskHooks` marker contained both copied hook definitions
+  and an event-keyed `hadEvents` object, causing Claude to ignore the configured
+  API key helper and report `Not logged in · Please run /login`.
+- Marker version 2 stores an array of event names, prior-presence flags, and
+  SHA-256 fingerprints. It contains no executable hook copies or event-named
+  keys. Configure and boot reconciliation migrate legacy markers even when
+  their observer command is already current. Disconnect can still remove
+  legacy observers, and migration preserves user hooks and edited commands.
+- Verification: 97 focused tests, `check:fast`, and knip passed with Bun 1.3.14.
+  The rebuilt binary configured a temporary profile accepted by the installed
+  Claude Code 2.1.283 doctor; `claude auth status` reported `api_key_helper`, and
+  disconnect restored the original user hook exactly. The user's settings were
+  backed up and repaired, and the updated Desktop app passed strict signature
+  verification.
+- The full suite reported 1,625 passes, 12 failures, one skip, and one error.
+  Socket/server tests cannot bind in the restricted environment. One companion
+  route test reads the live Claude profile; all four tests in that file pass
+  with an isolated `CLAUDE_CONFIG_DIR`.
+- Desktop control and authenticated local model discovery were blocked by the
+  approval service's model/endpoint error. Live inference remains unverified.
+  Restart CoPo and then Claude Code to load the updated app and settings.
+  During this local upgrade, only fingerprint-matching CoPo observers were
+  detached so the older running gateway cannot orphan them on shutdown; the
+  updated gateway reinstalls them on startup.
+
 ### Menu and Settings style consistency
 
 - Settings navigation and the companion profile/language menus now share
