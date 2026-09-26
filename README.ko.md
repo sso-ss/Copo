@@ -6,7 +6,7 @@
 
 *“도구와 모델이 만나는 연결점.”*
 
-<img src="shell/ui/companion/artwork/cat-idle.png" alt="CoPo의 고양이 마스코트" width="120">
+<img src="docs/assets/companion-animation.gif" alt="쉬고, 타이핑하고, 귀를 긁고, 기뻐하는 CoPo 고양이 마스코트 애니메이션" width="120">
 
 CoPo는 하나의 로컬 게이트웨이를 통해 AI 도구와 모델을 연결합니다.
 현재는 GitHub Copilot 계정으로 Claude Code, Claude Desktop, 로컬 Codex

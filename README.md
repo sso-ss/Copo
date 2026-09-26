@@ -6,7 +6,7 @@
 
 *“The connection point where tools meet models.”*
 
-<img src="shell/ui/companion/artwork/cat-idle.png" alt="CoPo's cat mascot" width="120">
+<img src="docs/assets/companion-animation.gif" alt="CoPo's animated cat mascot idling, typing, scratching its ear, and celebrating" width="120">
 
 CoPo connects your AI tools to models through one local gateway. Today, it
 connects Claude Code, Claude Desktop, and local Codex sessions through your
