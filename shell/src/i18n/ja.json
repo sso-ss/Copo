@@ -432,5 +432,12 @@
   "diagnostics-snapshot-hint": "モデルの互換性、ローカルパス、アカウント情報を含みます。",
   "diagnostics-refreshed": "{time} に診断情報を更新",
   "diagnostics-err-refresh": "更新できませんでした。前回の診断情報を表示しています: {error}",
-  "diagnostics-copy-error": "コピーできませんでした。「診断情報の全体」でテキストを選択できます。"
+  "diagnostics-copy-error": "コピーできませんでした。「診断情報の全体」でテキストを選択できます。",
+  "companion-task-completed": "タスクが完了しました",
+  "companion-task-cancelled": "タスクがキャンセルされました",
+  "companion-task-failed": "タスクが失敗しました",
+  "companion-task-waiting": "入力が必要です",
+  "companion-task-unavailable": "タスクの更新情報を取得できません",
+  "companion-task-monitoring": "タスクの監視",
+  "companion-task-event": "{time} · {status}"
 }

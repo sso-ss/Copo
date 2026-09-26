@@ -432,5 +432,12 @@
   "diagnostics-snapshot-hint": "Inclui compatibilidade dos modelos, caminhos locais e informações da conta.",
   "diagnostics-refreshed": "Diagnóstico atualizado às {time}",
   "diagnostics-err-refresh": "Não foi possível atualizar. Exibindo o último diagnóstico: {error}",
-  "diagnostics-copy-error": "Não foi possível copiar. Você pode selecionar o texto em Diagnóstico completo."
+  "diagnostics-copy-error": "Não foi possível copiar. Você pode selecionar o texto em Diagnóstico completo.",
+  "companion-task-completed": "Tarefa concluída",
+  "companion-task-cancelled": "Tarefa cancelada",
+  "companion-task-failed": "Falha na tarefa",
+  "companion-task-waiting": "Sua resposta é necessária",
+  "companion-task-unavailable": "Atualizações de tarefas indisponíveis",
+  "companion-task-monitoring": "Monitoramento de tarefas",
+  "companion-task-event": "{time} · {status}"
 }

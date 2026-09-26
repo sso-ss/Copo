@@ -172,8 +172,8 @@ Use the approved assets and their calibrated apparent size. Preserve each origin
 ### Timing and priority — proposed defaults
 
 - Happy/connection celebration: 10 seconds, extended so the pose
-  has time to be seen. Future whole-task celebrations should use the same hold;
-  the authoritative task-completion adapter is still required. Angry reaction:
+  has time to be seen. Whole-task celebrations use the same hold and require a
+  validated lifecycle event from the local adapter. Angry reaction:
   4 seconds.
 - New active work interrupts a celebration immediately. Repeated polls do not restart an existing reaction.
 - Running work has priority over another tool’s completion or isolated request failure. Show that other outcome in its row and the panel summary; do not imply every tool stopped.
@@ -269,7 +269,7 @@ Set timing and idle-resource budgets during the shell prototype. Observe the eff
 
 Decisions still needed during implementation:
 
-- Which existing tool can provide the first reliable whole-task adapter? This requires a capability audit, not a guess.
+- Local Claude Code and Codex record adapters are implemented; packaged acceptance and compatibility with future client record formats remain to be verified. See [implementation scope](dev/companion-implementation.md#local-task-lifecycle--september-26-2026).
 - Whether to name the cat or keep “CoPo Companion” as the UI label.
 - Final reaction durations and account-header layout after an interactive prototype.
 

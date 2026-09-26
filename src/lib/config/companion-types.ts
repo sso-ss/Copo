@@ -1,3 +1,4 @@
+import type { TaskSnapshot } from "../companion/task-types"
 import type { ClientActivitySnapshot } from "../http/client-activity-types"
 
 export interface CompanionConnection {
@@ -16,4 +17,5 @@ export interface CompanionData {
   connections: Array<CompanionConnection>
   availableToolIds: Array<string>
   activity: ClientActivitySnapshot
+  tasks?: TaskSnapshot
 }

@@ -16,6 +16,8 @@ import {
 import { atomicWriteJson } from "~/lib/platform/atomic-json"
 import { state } from "~/lib/runtime-state/state"
 
+import { hasTaskHooks, withTaskHooks, withoutTaskHooks } from "./task-hooks"
+
 /** The label Claude Code attributes its key under (Settings → API clients). */
 export const HELPER_LABEL = "claude-code"
 
@@ -254,8 +256,9 @@ function isOwnedAutoModeServerSetting(
 }
 
 export function stripBaseUrl(
-  existing: Record<string, unknown>,
+  settings: Record<string, unknown>,
 ): Record<string, unknown> {
+  const existing = withoutTaskHooks(settings)
   const snapshot = readPriorSnapshot(existing)
   const baseUrlOwnership = getBaseUrlOwnership(existing)
   const helperOwnership = getApiKeyHelperOwnership(existing)
@@ -356,11 +359,15 @@ export function applyProxyBaseUrl(
     && helperOwnership === "ours"
     && existing[API_KEY_HELPER_KEY] === helperCommand
     && AUTO_MODE_SERVER_KEY in readEnv(existing)
+    && hasTaskHooks(existing, true)
   ) {
     return { path: filePath, wrote: false, skippedReason: "already-ours" }
   }
 
-  writeClaudeCodeSettings(filePath, mergeBaseUrl(existing, helperCommand))
+  writeClaudeCodeSettings(
+    filePath,
+    withTaskHooks(mergeBaseUrl(existing, helperCommand)),
+  )
   return { path: filePath, wrote: true }
 }
 
@@ -380,6 +387,7 @@ export function revertProxyBaseUrl(
     baseUrlOwnership !== "ours"
     && helperOwnership !== "ours"
     && !isOwnedAutoModeServerSetting(existing)
+    && !hasTaskHooks(existing)
   ) {
     return {
       path: filePath,

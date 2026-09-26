@@ -17,6 +17,7 @@
  * being the same shape its corresponding GET endpoint returns.
  */
 
+import type { TaskEvent, TaskSnapshot } from "~/lib/companion/task-types"
 import type { AuthStatus } from "~/lib/config/settings-types"
 import type {
   ClientActivitySnapshot,
@@ -30,6 +31,8 @@ export interface SettingsEventMap {
   "auth.changed": AuthStatus
   "activity.snapshot": ClientActivitySnapshot
   "activity.request": ClientRequestEvent
+  "tasks.snapshot": TaskSnapshot
+  "tasks.event": TaskEvent
   /** Invalidate routing/key views; never send the secret-bearing mutation body. */
   "connections.changed": Record<string, never>
 }

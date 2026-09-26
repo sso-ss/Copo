@@ -1,12 +1,14 @@
 import type { CompanionData, CompanionConnection } from "../../../src/lib/config/companion-types";
 import type { ClientActivitySnapshot, ClientRequestEvent } from "../../../src/lib/http/client-activity-types";
+import type { TaskEvent, TaskSnapshot } from "../../../src/lib/companion/task-types";
+import { CompanionTasks } from "./task-state";
 
 export type Pose = "sleep" | "idle" | "focus" | "success" | "failure" | "hover";
 
 const SUCCESS_REACTION_MS = 10000;
 
-/** Shared display rules for both local windows. Only live verification can
- * celebrate here; successful inference never means a whole task completed. */
+/** Task completion requires a client lifecycle event. Successful inference
+ * alone only verifies a connection. Both local windows share these rules. */
 export class CompanionState {
   data: CompanionData | null = null;
   activity: ClientActivitySnapshot | null = null;
@@ -16,6 +18,7 @@ export class CompanionState {
   reaction: { pose: Pose; until: number; key: string } | null = null;
   private requestEventId = 0;
   private requestVerified = new Set<string>();
+  tasks = new CompanionTasks();
 
   snapshot(snapshot: ClientActivitySnapshot, preserveLiveEvents = false): void {
     const previous = this.activity;
@@ -23,6 +26,7 @@ export class CompanionState {
     if (previous?.generation !== snapshot.generation) {
       this.verified.clear();
       this.reaction = null;
+      this.tasks = new CompanionTasks();
     }
     this.activity = snapshot;
     this.available = true;
@@ -48,12 +52,37 @@ export class CompanionState {
 
   update(data: CompanionData, now = Date.now()): void {
     const previousHealth = this.data?.gateway;
+    const available = this.available;
     this.data = data;
     this.snapshot(data.activity, this.available);
+    if (data.tasks) this.taskSnapshot(data.tasks, available);
+    else this.tasks = new CompanionTasks();
     if (data.gateway === "upstream-error" && previousHealth !== data.gateway) {
       this.reaction = { pose: "failure", until: now + 4000, key: "companion-upstream-error" };
     }
     if (data.gateway === "sign-in-required") this.reaction = null;
+  }
+
+  taskSnapshot(snapshot: TaskSnapshot, preserveLiveEvents = false): void {
+    if (snapshot.generation !== this.activity?.generation) return;
+    this.tasks.snapshot(snapshot, preserveLiveEvents);
+    if (this.running > 0 || this.tasks.waiting > 0) this.reaction = null;
+  }
+
+  task(event: TaskEvent, now: number): boolean {
+    this.display(now);
+    if (event.generation !== this.activity?.generation) return false;
+    const outcome = this.tasks.event(event);
+    if (outcome === "gap") { this.available = false; return false; }
+    if (outcome === "old" || event.task.parentTaskId) return true;
+    const status = event.task.status;
+    if (status === "running" || status === "waiting" || status === "unavailable") this.reaction = null;
+    if (!this.available) return true;
+    if (status === "failed" || status === "cancelled") this.reaction = { pose: "failure", until: now + 4000, key: `companion-task-${status}` };
+    else if (this.running === 0 && this.tasks.waiting === 0 && status === "completed" && this.data?.gateway === "ready" && this.data.account
+      && this.data.connections.some((connection) => connection.id === event.task.connectionId && connection.configured)
+      && this.reaction?.pose !== "failure") this.reaction = { pose: "success", until: now + SUCCESS_REACTION_MS, key: "companion-task-completed" };
+    return true;
   }
 
   request(event: ClientRequestEvent, now: number): boolean {
@@ -86,7 +115,7 @@ export class CompanionState {
         this.requestVerified.add(event.apiKeyId);
       }
       // Never replay an outcome superseded by work already observed in a poll.
-      if (event.eventId === snapshot.eventId && this.running === 0) {
+      if (event.eventId === snapshot.eventId && this.running === 0 && this.tasks.waiting === 0) {
         if (event.status === "stopped") this.reaction = { pose: "failure", until: now + 4000, key: "companion-interrupted" };
         else if (newlyVerified && this.data?.gateway === "ready" && this.data.account && this.data.connections.some((c) => c.configured && c.apiKeyId === event.apiKeyId)
           && this.reaction?.pose !== "failure")
@@ -102,7 +131,7 @@ export class CompanionState {
   }
 
   get running(): number {
-    return this.activity?.activity.reduce((sum, entry) => sum + entry.activeRequests, 0) ?? 0;
+    return (this.activity?.activity.reduce((sum, entry) => sum + entry.activeRequests, 0) ?? 0) + this.tasks.running;
   }
 
   connected(connection: CompanionConnection): boolean {
@@ -128,9 +157,10 @@ export class CompanionState {
       key: this.starting ? "companion-starting" : "companion-unavailable",
     };
     if (this.data?.gateway === "sign-in-required") return { pose: "sleep", key: "companion-sign-in-required" };
+    if (this.data?.gateway === "upstream-error") return this.reaction?.pose === "failure" ? this.reaction : { pose: "sleep", key: "companion-upstream-error" };
     if (this.running > 0) return { pose: "focus", key: "companion-working" };
+    if (this.tasks.waiting > 0) return { pose: "idle", key: "companion-task-waiting" };
     if (this.reaction) return this.reaction;
-    if (this.data?.gateway === "upstream-error") return { pose: "sleep", key: "companion-upstream-error" };
     if (this.ready > 0) return { pose: "idle", key: "companion-ready" };
     return { pose: "sleep", key: this.configured > 0 ? "companion-waiting" : "companion-no-tools" };
   }

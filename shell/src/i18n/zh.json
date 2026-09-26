@@ -432,5 +432,12 @@
   "diagnostics-snapshot-hint": "包含模型兼容性、本地路径和账户信息。",
   "diagnostics-refreshed": "诊断信息已于 {time} 刷新",
   "diagnostics-err-refresh": "无法刷新，正在显示上次的诊断信息：{error}",
-  "diagnostics-copy-error": "无法复制。你可以在完整诊断信息中选择文本。"
+  "diagnostics-copy-error": "无法复制。你可以在完整诊断信息中选择文本。",
+  "companion-task-completed": "任务已完成",
+  "companion-task-cancelled": "任务已取消",
+  "companion-task-failed": "任务失败",
+  "companion-task-waiting": "需要你的输入",
+  "companion-task-unavailable": "无法获取任务更新",
+  "companion-task-monitoring": "任务监测",
+  "companion-task-event": "{time} · {status}"
 }

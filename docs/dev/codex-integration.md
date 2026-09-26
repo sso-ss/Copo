@@ -96,3 +96,12 @@ Desktop detection is tested with temporary app bundles. Routing restoration
 tests use in-memory TOML, including repeated enable and user edits made while
 routing is active. The live routing check runs when enabling the integration;
 development checks do not change the developer's Codex configuration.
+
+## Companion task observations
+
+The gateway observes newly appended local Codex session lifecycle records only
+when their provider matches the managed selected provider. Task starts, input
+waits, terminal outcomes and observed child turns are independent of inference
+request accounting. Existing history never triggers celebrations. This local
+record contract is version-sensitive; remote/cloud sessions and unknown event
+shapes are outside its scope. See [lifecycle evidence and limitations](companion-implementation.md#local-task-lifecycle--september-26-2026).

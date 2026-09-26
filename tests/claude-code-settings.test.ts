@@ -16,6 +16,7 @@ import {
   stripBaseUrl,
   writeClaudeCodeSettings,
 } from "~/apps/claude-code/config"
+import { hasTaskHooks, withoutTaskHooks } from "~/apps/claude-code/task-hooks"
 import { getConfig, writeConfig } from "~/lib/config/config"
 import { state } from "~/lib/runtime-state/state"
 
@@ -470,7 +471,8 @@ describe("applyProxyBaseUrl classifier setting", () => {
     writeRaw(JSON.stringify(original))
 
     const result = apply()
-    expect(result.skippedReason).toBe("already-ours")
+    expect(result.wrote).toBe(true)
+    expect(hasTaskHooks(read())).toBe(true)
 
     revertProxyBaseUrl(settingsPath)
     expect(read()).toEqual({ env: { [AUTO_MODE_SERVER_KEY]: "0" } })
@@ -482,7 +484,8 @@ describe("applyProxyBaseUrl (end-to-end continued)", () => {
     expect(fs.existsSync(settingsPath)).toBe(false)
     const result = apply()
     expect(result.wrote).toBe(true)
-    expect(read()).toEqual({
+    expect(hasTaskHooks(read())).toBe(true)
+    expect(withoutTaskHooks(read())).toEqual({
       apiKeyHelper: TEST_HELPER,
       _maximalHelper: TEST_MARKER,
       env: {
@@ -501,7 +504,8 @@ describe("applyProxyBaseUrl (end-to-end continued)", () => {
     writeRaw("{ garbage")
     const result = apply()
     expect(result.wrote).toBe(true)
-    expect(read()).toEqual({
+    expect(hasTaskHooks(read())).toBe(true)
+    expect(withoutTaskHooks(read())).toEqual({
       apiKeyHelper: TEST_HELPER,
       _maximalHelper: TEST_MARKER,
       env: {

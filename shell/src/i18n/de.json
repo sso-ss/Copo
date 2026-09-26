@@ -432,5 +432,12 @@
   "diagnostics-snapshot-hint": "Enthält Modellkompatibilität, lokale Pfade und Kontoinformationen.",
   "diagnostics-refreshed": "Diagnose um {time} aktualisiert",
   "diagnostics-err-refresh": "Aktualisierung fehlgeschlagen. Der letzte Bericht wird angezeigt: {error}",
-  "diagnostics-copy-error": "Kopieren fehlgeschlagen. Sie können den Text im vollständigen Diagnosebericht auswählen."
+  "diagnostics-copy-error": "Kopieren fehlgeschlagen. Sie können den Text im vollständigen Diagnosebericht auswählen.",
+  "companion-task-completed": "Aufgabe abgeschlossen",
+  "companion-task-cancelled": "Aufgabe abgebrochen",
+  "companion-task-failed": "Aufgabe fehlgeschlagen",
+  "companion-task-waiting": "Ihre Eingabe ist erforderlich",
+  "companion-task-unavailable": "Aufgabenaktualisierungen nicht verfügbar",
+  "companion-task-monitoring": "Aufgabenüberwachung",
+  "companion-task-event": "{time} · {status}"
 }

@@ -432,5 +432,12 @@
   "diagnostics-snapshot-hint": "모델 호환성, 로컬 경로, 계정 정보가 포함됩니다.",
   "diagnostics-refreshed": "{time}에 진단 정보 새로 고침",
   "diagnostics-err-refresh": "새로 고칠 수 없습니다. 마지막 진단 정보를 표시합니다: {error}",
-  "diagnostics-copy-error": "복사할 수 없습니다. 전체 진단 정보에서 텍스트를 선택할 수 있습니다."
+  "diagnostics-copy-error": "복사할 수 없습니다. 전체 진단 정보에서 텍스트를 선택할 수 있습니다.",
+  "companion-task-completed": "작업 완료",
+  "companion-task-cancelled": "작업 취소됨",
+  "companion-task-failed": "작업 실패",
+  "companion-task-waiting": "입력이 필요합니다",
+  "companion-task-unavailable": "작업 업데이트를 확인할 수 없습니다",
+  "companion-task-monitoring": "작업 모니터링",
+  "companion-task-event": "{time} · {status}"
 }

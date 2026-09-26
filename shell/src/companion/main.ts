@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { CompanionConnection, CompanionData } from "../../../src/lib/config/companion-types";
 import type { ClientActivitySnapshot, ClientRequestEvent } from "../../../src/lib/http/client-activity-types";
+import type { TaskEvent, TaskSnapshot } from "../../../src/lib/companion/task-types";
 import { applyI18n } from "../i18n/apply";
 import { setLocale, t } from "../i18n";
 import { createProfileMenu } from "./menu";
@@ -53,7 +54,7 @@ async function action(name: string): Promise<void> {
 
 async function signOut(): Promise<void> {
   if (signingOut || !state.data?.account) return;
-  if (state.running > 0) {
+  if (state.running > 0 || state.tasks.waiting > 0) {
     element("action-error").textContent = t("companion-account-busy");
     element("action-error").hidden = false;
     return;
@@ -76,7 +77,7 @@ function showError(code?: unknown): void {
 async function settings(section: string): Promise<void> {
   // Account management can restart the gateway. Keep this entry unavailable
   // during observed requests instead of silently switching their identity.
-  if (section === "account" && state.available && state.running > 0) {
+  if (section === "account" && state.available && (state.running > 0 || state.tasks.waiting > 0)) {
     element("action-error").textContent = t("companion-account-busy");
     element("action-error").hidden = false;
     return;
@@ -235,11 +236,15 @@ function panel(): void {
     name.className = "connection-name";
     name.textContent = connection.name;
     const activity = state.activity?.activity.find((entry) => entry.apiKeyId === connection.apiKeyId);
-    const working = state.available && (activity?.activeRequests ?? 0) > 0;
+    const tasks = state.tasks.forConnection(connection.id);
+    const taskRunning = tasks.some((task) => task.status === "running");
+    const taskWaiting = tasks.some((task) => task.status === "waiting");
+    const working = state.available && ((activity?.activeRequests ?? 0) > 0 || taskRunning);
     row.dataset.working = String(working);
     const status = document.createElement("span");
     status.className = "connection-status";
     status.textContent = working ? t("activity-active", { n: activity?.activeRequests ?? 0 }) : t(!state.available ? "companion-unavailable" : activity?.status === "stopped" ? "companion-interrupted" : state.connected(connection) ? "companion-connected" : connection.configured ? "companion-configured" : "companion-disabled");
+    if (state.available && (taskRunning || taskWaiting)) status.textContent = t(taskRunning ? "companion-working" : "companion-task-waiting");
     labels.append(name, status);
     const control = connectionSwitch(connection);
     summary.append(icon, labels, control);
@@ -247,7 +252,7 @@ function panel(): void {
     content.className = "connection-content";
     const note = document.createElement("p");
     note.className = "connection-note";
-    note.textContent = t(connection.shared ? "companion-shared" : "companion-request-only");
+    note.textContent = t(state.tasks.data?.sources.includes(connection.id) ? "companion-task-monitoring" : connection.shared ? "companion-shared" : "companion-request-only");
     const verification = document.createElement("p");
     verification.className = "connection-note";
     verification.textContent = t(state.connected(connection) ? "companion-verified" : "companion-verify-help");
@@ -255,6 +260,12 @@ function panel(): void {
     manage.textContent = t("companion-manage");
     manage.dataset.section = connection.section;
     content.append(note, verification, manage);
+    for (const task of tasks.filter((task) => !["running", "waiting"].includes(task.status)).slice(-3).reverse()) {
+      const outcome = document.createElement("p");
+      outcome.className = "connection-note";
+      outcome.textContent = t("companion-task-event", { time: new Date(task.updatedAt).toLocaleTimeString(), status: t(`companion-task-${task.status}`) });
+      content.append(outcome);
+    }
     for (const event of (state.activity?.recentEvents ?? []).filter((event) => event.apiKeyId === connection.apiKeyId).slice(-3).reverse()) {
       const outcome = document.createElement("p");
       outcome.className = "connection-note";
@@ -293,7 +304,7 @@ async function refresh(): Promise<void> {
   }
 }
 
-type StreamMessage = { kind: string; data?: ClientActivitySnapshot | ClientRequestEvent };
+type StreamMessage = { kind: string; data?: ClientActivitySnapshot | ClientRequestEvent | TaskSnapshot | TaskEvent };
 async function start(): Promise<void> {
   if (!isPanel) await listen("companion:reset-pointer", resetPointer);
   await listen<string>("companion:gateway", ({ payload }) => {
@@ -306,6 +317,10 @@ async function start(): Promise<void> {
   await listen<StreamMessage>("companion:stream", ({ payload }) => {
     streamSeen = Date.now();
     if (payload.kind === "activity.snapshot") state.snapshot(payload.data as ClientActivitySnapshot);
+    else if (payload.kind === "tasks.snapshot") state.taskSnapshot(payload.data as TaskSnapshot);
+    else if (payload.kind === "tasks.event") {
+      if (!state.task(payload.data as TaskEvent, Date.now())) void refresh();
+    }
     else if (payload.kind === "activity.request") {
       if (!state.request(payload.data as ClientRequestEvent, Date.now())) void refresh();
     } else if (payload.kind === "unavailable") state.disconnect(Date.now());

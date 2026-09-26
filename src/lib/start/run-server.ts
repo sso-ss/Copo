@@ -14,6 +14,7 @@ import { serve } from "srvx"
 import { removeLegacyShimIfPresent } from "~/apps/claude-code/detect"
 import { reconcileClaudeCodeOnBoot } from "~/apps/claude-code/reconcile"
 import { type AccountType } from "~/lib/auth/auth-types"
+import { startTaskMonitoring } from "~/lib/companion/task-service"
 import { mergeConfigWithDefaults } from "~/lib/config/config"
 import { initProxyFromEnv } from "~/lib/http/proxy"
 import { ensureCliSymlink } from "~/lib/platform/cli-path"
@@ -219,6 +220,7 @@ export async function runServer(options: RunServerOptions): Promise<void> {
   // if the user left routing on. Self-heals a URL a prior crash/force-kill
   // stranded over a dead proxy. Ownership-guarded; no-op when routing is off.
   reconcileClaudeCodeOnBoot()
+  startTaskMonitoring()
 
   // Drop the "session running" sentinel only AFTER reconcileClaudeCodeOnBoot
   // so the freshly-written URL is in place when we promise the session is

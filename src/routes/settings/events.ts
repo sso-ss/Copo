@@ -22,6 +22,7 @@ import { Hono } from "hono"
 import { streamSSE, type SSEMessage } from "hono/streaming"
 
 import { getAuthStatus } from "~/lib/auth/auth-controller"
+import { getTaskSnapshot } from "~/lib/companion/task-runtime"
 import { settingsEventBus } from "~/lib/config/settings-events"
 import { getClientActivitySnapshot } from "~/lib/http/client-activity"
 
@@ -63,15 +64,30 @@ eventsRoutes.get("/", (c) =>
       }),
       settingsEventBus.subscribe("activity.snapshot", (snapshot) => {
         enqueue({ event: "activity.snapshot", data: JSON.stringify(snapshot) })
+        // Account changes must establish the activity generation first.
+        enqueue({
+          event: "tasks.snapshot",
+          data: JSON.stringify(getTaskSnapshot()),
+        })
       }),
       settingsEventBus.subscribe("activity.request", (event) => {
         enqueue({ event: "activity.request", data: JSON.stringify(event) })
+      }),
+      settingsEventBus.subscribe("tasks.snapshot", (snapshot) => {
+        enqueue({ event: "tasks.snapshot", data: JSON.stringify(snapshot) })
+      }),
+      settingsEventBus.subscribe("tasks.event", (event) => {
+        enqueue({ event: "tasks.event", data: JSON.stringify(event) })
       }),
     ]
     enqueue({ event: "auth.changed", data: JSON.stringify(getAuthStatus()) })
     enqueue({
       event: "activity.snapshot",
       data: JSON.stringify(getClientActivitySnapshot()),
+    })
+    enqueue({
+      event: "tasks.snapshot",
+      data: JSON.stringify(getTaskSnapshot()),
     })
     const heartbeat = setInterval(() => {
       enqueue({ data: "", event: "ping" })

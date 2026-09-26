@@ -2,19 +2,20 @@
 
 Implementation tracking for the [Companion PRD](../companion-integration-prd.md).
 The branch now includes an internal desktop preview: local companion and
-connections windows, bundled artwork, and ordered request activity. This is
-not release acceptance or whole-task monitoring; the remaining gates are below.
+connections windows, bundled artwork, ordered request activity, and local
+Claude Code/Codex task observers. Packaged acceptance remains open below.
 
 ## Source capability audit — September 25, 2026
 
-This is a local source audit, not verification of external client lifecycle
-APIs. No current integration emits authoritative whole-task events.
+The setup audit below is supplemented by the September 26 local lifecycle
+implementation described below. Public API stability and packaged end-to-end
+acceptance have not been established.
 
 | Integration | Current setup and verification | Activity attribution | Whole-task monitoring |
 |---|---|---|---|
-| Claude Code | Writes the owned base URL and key helper; success means configuration was applied, without an inference verification step | Named helper key; see `src/apps/claude-code/config.ts` | Not implemented; client hook semantics need validation |
+| Claude Code | Writes the owned base URL and key helper; success means configuration was applied, without an inference verification step | Named helper key; see `src/apps/claude-code/config.ts` | Local turn records plus owned start/wait/failure hooks; see lifecycle scope below |
 | Claude Desktop | Applies a configuration-library profile; no inference verification in `enable()` | Named `claude-desktop` key | Not implemented; supported client API needs investigation |
-| Codex CLI and Desktop | Combined registry entry; verifies a Responses request before writing changed routing; an unchanged enable skips verification | Shared `codex` key; cannot distinguish CLI from Desktop traffic | Not implemented; lifecycle capability remains unverified |
+| Codex CLI and Desktop | Combined registry entry; verifies a Responses request before writing changed routing; an unchanged enable skips verification | Shared `codex` key; cannot distinguish CLI from Desktop traffic | Local persisted turn events for the selected CoPo provider; remote/cloud sessions excluded |
 | Copilot CLI | Coming-soon placeholder; cannot enable | No supported integration key | Unavailable |
 | Custom API client | Named API keys; creating a key does not verify routing | Key ID only; tools sharing a key cannot be distinguished | Request activity only |
 
@@ -54,7 +55,7 @@ cannot be lost between snapshot capture and listener registration. Writes are
 serialized; a subscriber with 256 pending frames is disconnected to bound
 memory and must reconcile on reconnect.
 
-## Implemented: request-only display controller
+## Implemented: activity display controller
 
 1. Accept an initial snapshot as the baseline. Display its retained outcomes,
    but do not generate reactions from historical entries.
@@ -306,15 +307,15 @@ connection-success celebration.
   it can trigger one connection-verification reaction, never task completion.
   After restart, only retained runtime evidence establishes readiness. A shared
   key cannot prove which of its configured tools sent the request.
-- Validate and implement at least one authoritative whole-task adapter, including
-  request gaps, local child work, waiting, cancellation, failure, duplicate
-  rejection, and account generation. No current integration has this adapter;
-  every row therefore says **Request activity only**.
+- Validate the local Claude Code and Codex adapters in the packaged app against
+  real multi-request tasks, child work, waiting, cancellation and failure.
+  Available local sources show **Task monitoring**; other clients retain
+  **Request activity only**. See lifecycle scope and limitations below.
 - Share transient reaction state centrally if the panel must mirror a reaction
   that began before the panel was opened.
 - Enforce account-switch protection in the existing account mutation path. The
   companion currently prevents opening account management during observed
-  requests, but existing Settings can still switch and request gaps are unknown.
+  requests/tasks, but existing Settings can still switch accounts.
 - Complete local diagnostics for sidecar-down recovery. Logs and Retry are local;
   the full Diagnostics page still needs the gateway to serve it.
 - Exercise all PRD acceptance scenarios in the packaged macOS app, especially
@@ -323,6 +324,67 @@ connection-success celebration.
 - Obtain i18n wording review before landing per `CONTRIBUTORS.md`.
 
 Task-completion marketing remains gated on a demonstrated end-to-end named
-integration. Request-level preview behavior does not satisfy AC-06, AC-07, or
-the task-aware portion of AC-09. AC-13 and the packaged acceptance pass also
-remain open.
+integration. Automated lifecycle coverage now exercises AC-06, AC-07 and the
+task-aware portion of AC-09, but live packaged verification, AC-13 and the full
+acceptance pass remain open.
+
+
+### Local task lifecycle — September 26, 2026
+
+`src/lib/companion/` observes local lifecycle metadata independently of request
+accounting. The settings snapshot includes `tasks`; SSE publishes `tasks.snapshot`
+and `tasks.event`, forwarded by the native subscriber. Account resets send the
+activity generation before its task baseline. Each task has an opaque tool ID,
+connection, optional parent, status and timestamps. Snapshots do not replay happy
+poses. Ordered live completion holds happiness for ten seconds; new work or a
+gateway problem interrupts it. Input waits are idle, cancellation/failure is a
+stopped reaction, and missing evidence never becomes success.
+
+Evidence and scope:
+
+- Codex 0.157.1 and locally recorded 0.158.0-alpha.2 use `session_meta` provider
+  attribution plus `event_msg.task_started`, `task_complete`, `turn_aborted` and
+  failure records. Blocking input tool calls/results provide waiting/resume.
+  Observed child turn IDs defer parent completion. Only local sessions matching
+  the currently selected managed provider are observed.
+- Claude Code 2.1.280 installed source and local 2.1.273+ records establish that
+  `system/turn_duration` follows the turn loop and Stop-hook handling. Nonzero
+  pending background-agent/workflow counts withhold completion. API-error and
+  explicit interruption metadata produce failure/cancellation, never happiness.
+  A bare `Stop` hook is deliberately not registered: another hook can veto it.
+- Owned Claude hooks report prompt start, permission/question wait, tool resume,
+  StopFailure and SessionEnd to an authenticated loopback endpoint. They discard
+  prompt/response/tool-input/path fields before transport, fail quietly and retain
+  existing user hooks. Disconnect removes only exact owned entries and restores
+  previously empty hook arrays. Already configured clients migrate on reconcile.
+- Read-only JSONL scans are bounded and baseline existing history on launch,
+  account changes and file replacement. Malformed/truncated/missing records mark
+  affected tasks unavailable. Public snapshots contain no prompts, responses,
+  credentials or filesystem paths. No new transcript storage is created.
+
+These are local record adapters, not a promised stable public lifecycle API.
+Unknown record shapes are ignored. Public documentation retrieval was blocked by
+network resolution and then an automatic approval service error. Changes in
+client record formats require renewed validation. Claude observation assumes the
+managed user-level routing remains effective; per-project/environment routing
+overrides cannot be proven from these records. Claude Desktop remains request-only.
+Remote/cloud Codex sessions are outside this adapter's scope. A client crash that
+leaves no interruption record can retain a running task until new turn, source
+loss, or gateway reset; inactivity is intentionally not called completion.
+Claude background work without a subsequent finished-turn record similarly
+withholds success. No claim of complete PRD acceptance is made.
+
+Validation: the merged focused/integration run passed 210 tests with one
+opt-in production-build test skipped. A final 27-test state run passed after
+adding concurrent-failure precedence coverage. Five native companion tests,
+root `check:fast`, shell TypeScript, and root knip passed (existing nonblocking
+warnings/configuration hints remain). The UI, embedded sidecar and offline
+Tauri app build passed; strict ad-hoc signature and executable hash checks
+passed before and after installation.
+
+Installed `~/Desktop/CoPo.app`; the prior bundle is backed up at
+`/Users/sso/.local/share/copo-update-20260925/backups/CoPo-before-task-lifecycle-1790407249003427000.app`.
+The running app was not restarted. Quit/reopen CoPo, then start a fresh Claude
+Code session to load its updated observers. Live visual and real-client
+end-to-end acceptance remain pending; no full PRD acceptance is claimed.
+i18n wording review remains required before landing per `CONTRIBUTORS.md`.

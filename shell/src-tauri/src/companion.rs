@@ -182,19 +182,22 @@ pub async fn companion_action(app: AppHandle, action: String) -> Result<(), Stri
     Ok(())
 }
 
-fn has_active_requests(data: &Value) -> bool {
+fn has_active_work(data: &Value) -> bool {
     data.pointer("/activity/activeRequests").and_then(Value::as_array)
         .is_some_and(|requests| !requests.is_empty())
         || data.pointer("/activity/activity").and_then(Value::as_array)
             .is_some_and(|entries| entries.iter().any(|entry|
                 entry.get("activeRequests").and_then(Value::as_u64).unwrap_or(0) > 0))
+        || data.pointer("/tasks/tasks").and_then(Value::as_array)
+            .is_some_and(|tasks| tasks.iter().any(|task|
+                matches!(task.get("status").and_then(Value::as_str), Some("running" | "waiting"))))
 }
 
 async fn sign_out(app: &AppHandle) -> Result<(), String> {
     // Recheck current gateway activity after the UI confirmation. This protects
-    // observed requests; whole-task gaps still need a lifecycle adapter.
+    // observed requests and tasks, including tasks waiting for input.
     let data = companion_data(app.clone()).await?;
-    if has_active_requests(&data) { return Err("Requests are still running".into()); }
+    if has_active_work(&data) { return Err("Work is still in progress".into()); }
     let client = reqwest::Client::builder().timeout(Duration::from_secs(10)).build()
         .map_err(|_| "Sign out failed")?;
     let response = client.post(format!("http://127.0.0.1:{SIDECAR_PORT}/settings/api/auth/github/sign-out"))
@@ -313,7 +316,7 @@ async fn stream_activity(app: &AppHandle, client: &reqwest::Client) -> Result<()
             let kind = frame.lines().find_map(|line| line.strip_prefix("event: ")).unwrap_or("");
             if matches!(kind, "auth.changed" | "connections.changed") {
                 let _ = app.emit("companion:stream", json!({"kind": "refresh"}));
-            } else if matches!(kind, "activity.snapshot" | "activity.request") {
+            } else if matches!(kind, "activity.snapshot" | "activity.request" | "tasks.snapshot" | "tasks.event") {
                 if let Some(data) = frame.lines().find_map(|line| line.strip_prefix("data: ")) {
                     if let Ok(data) = serde_json::from_str::<Value>(data) {
                         let _ = app.emit("companion:stream", json!({"kind": kind, "data": data}));
@@ -329,16 +332,24 @@ async fn stream_activity(app: &AppHandle, client: &reqwest::Client) -> Result<()
 
 #[cfg(test)]
 mod tests {
-    use super::{has_active_requests, toggle_target, validate_toggle_response};
+    use super::{has_active_work, toggle_target, validate_toggle_response};
     use reqwest::StatusCode;
     use serde_json::json;
 
     #[test]
     fn sign_out_checks_both_request_and_summary_activity() {
-        assert!(!has_active_requests(&json!({"activity":{"activeRequests":[],"activity":[]}})));
-        assert!(has_active_requests(&json!({"activity":{"activeRequests":[{"requestId":"r1"}],"activity":[]}})));
-        assert!(has_active_requests(&json!({"activity":{"activeRequests":[],"activity":[{"activeRequests":1}]}})));
-        assert!(!has_active_requests(&json!({"activity":{"activeRequests":[],"activity":[{"activeRequests":0}]}})));
+        assert!(!has_active_work(&json!({"activity":{"activeRequests":[],"activity":[]}})));
+        assert!(has_active_work(&json!({"activity":{"activeRequests":[{"requestId":"r1"}],"activity":[]}})));
+        assert!(has_active_work(&json!({"activity":{"activeRequests":[],"activity":[{"activeRequests":1}]}})));
+        assert!(!has_active_work(&json!({"activity":{"activeRequests":[],"activity":[{"activeRequests":0}]}})));
+    }
+
+    #[test]
+    fn sign_out_protects_task_gaps_and_input_waits() {
+        for status in ["running", "waiting"] {
+            assert!(has_active_work(&json!({"tasks":{"tasks":[{"status":status}]}})));
+        }
+        assert!(!has_active_work(&json!({"tasks":{"tasks":[{"status":"completed"}]}})));
     }
 
     #[test]

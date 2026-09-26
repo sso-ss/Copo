@@ -10,10 +10,13 @@ import { getAllApps } from "~/apps/registry"
 import { resolveApiKey } from "~/lib/auth/api-key-helper"
 import { getCompanionAccount } from "~/lib/auth/auth-controller"
 import { currentGitHubHost } from "~/lib/auth/github-host"
+import { getTaskSnapshot } from "~/lib/companion/task-runtime"
 import { getConfig, type AppConfig } from "~/lib/config/config"
 import { forwardError } from "~/lib/errors/error"
 import { getClientActivitySnapshot } from "~/lib/http/client-activity"
 import { state } from "~/lib/runtime-state/state"
+
+import { claudeTaskHookRoutes } from "./claude-task-hook"
 
 function appConnection(
   app: ClientApp,
@@ -77,6 +80,7 @@ function connectionsFor(
 }
 
 export const companionRoutes = new Hono()
+companionRoutes.route("/claude-hook", claudeTaskHookRoutes)
 
 companionRoutes.get("/", (c) => {
   try {
@@ -100,6 +104,7 @@ companionRoutes.get("/", (c) => {
       connections,
       availableToolIds: apps.map((app) => app.id),
       activity: getClientActivitySnapshot(),
+      tasks: getTaskSnapshot(),
     } satisfies CompanionData)
   } catch (error) {
     return forwardError(c, error)

@@ -432,5 +432,12 @@
   "diagnostics-snapshot-hint": "Включает совместимость моделей, локальные пути и данные аккаунта.",
   "diagnostics-refreshed": "Отчёт обновлён в {time}",
   "diagnostics-err-refresh": "Не удалось обновить. Показан последний отчёт: {error}",
-  "diagnostics-copy-error": "Не удалось скопировать. Можно выделить текст в полном диагностическом отчёте."
+  "diagnostics-copy-error": "Не удалось скопировать. Можно выделить текст в полном диагностическом отчёте.",
+  "companion-task-completed": "Задача завершена",
+  "companion-task-cancelled": "Задача отменена",
+  "companion-task-failed": "Ошибка задачи",
+  "companion-task-waiting": "Требуется ваш ответ",
+  "companion-task-unavailable": "Обновления задач недоступны",
+  "companion-task-monitoring": "Отслеживание задач",
+  "companion-task-event": "{time} · {status}"
 }

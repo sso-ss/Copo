@@ -432,5 +432,12 @@
   "diagnostics-snapshot-hint": "Include compatibilità dei modelli, percorsi locali e informazioni dell’account.",
   "diagnostics-refreshed": "Diagnostica aggiornata alle {time}",
   "diagnostics-err-refresh": "Aggiornamento non riuscito. Viene mostrata l’ultima diagnostica: {error}",
-  "diagnostics-copy-error": "Copia non riuscita. Puoi selezionare il testo in Diagnostica completa."
+  "diagnostics-copy-error": "Copia non riuscita. Puoi selezionare il testo in Diagnostica completa.",
+  "companion-task-completed": "Attività completata",
+  "companion-task-cancelled": "Attività annullata",
+  "companion-task-failed": "Attività non riuscita",
+  "companion-task-waiting": "È richiesto il tuo intervento",
+  "companion-task-unavailable": "Aggiornamenti delle attività non disponibili",
+  "companion-task-monitoring": "Monitoraggio delle attività",
+  "companion-task-event": "{time} · {status}"
 }

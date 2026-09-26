@@ -432,5 +432,12 @@
   "diagnostics-snapshot-hint": "Inclut la compatibilité des modèles, les chemins locaux et les informations du compte.",
   "diagnostics-refreshed": "Diagnostic actualisé à {time}",
   "diagnostics-err-refresh": "Actualisation impossible. Dernier diagnostic affiché : {error}",
-  "diagnostics-copy-error": "Copie impossible. Vous pouvez sélectionner le texte dans Diagnostic complet."
+  "diagnostics-copy-error": "Copie impossible. Vous pouvez sélectionner le texte dans Diagnostic complet.",
+  "companion-task-completed": "Tâche terminée",
+  "companion-task-cancelled": "Tâche annulée",
+  "companion-task-failed": "Échec de la tâche",
+  "companion-task-waiting": "Votre réponse est nécessaire",
+  "companion-task-unavailable": "Mises à jour des tâches indisponibles",
+  "companion-task-monitoring": "Suivi des tâches",
+  "companion-task-event": "{time} · {status}"
 }

@@ -21,6 +21,7 @@ import type { serve } from "srvx"
 import consola from "consola"
 
 import { reconcileClaudeCodeOnShutdown } from "~/apps/claude-code/reconcile"
+import { stopTaskMonitoring } from "~/lib/companion/task-service"
 import { removePidfile } from "~/lib/platform/replace-running"
 
 import { clearSessionRunning } from "./session-sentinel"
@@ -37,6 +38,7 @@ export async function initiateShutdown(
 ): Promise<void> {
   if (shuttingDown) return
   shuttingDown = true
+  stopTaskMonitoring()
 
   consola.info(`shutdown: ${reason}, draining`)
 

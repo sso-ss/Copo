@@ -432,5 +432,12 @@
   "diagnostics-snapshot-hint": "Includes model compatibility details, local paths, and account information.",
   "diagnostics-refreshed": "Snapshot refreshed at {time}",
   "diagnostics-err-refresh": "Couldn’t refresh. Showing the last snapshot: {error}",
-  "diagnostics-copy-error": "Couldn’t copy. You can select the text in Full diagnostic snapshot."
+  "diagnostics-copy-error": "Couldn’t copy. You can select the text in Full diagnostic snapshot.",
+  "companion-task-completed": "Task finished",
+  "companion-task-cancelled": "Task cancelled",
+  "companion-task-failed": "Task failed",
+  "companion-task-waiting": "Needs your input",
+  "companion-task-unavailable": "Task updates unavailable",
+  "companion-task-monitoring": "Task monitoring",
+  "companion-task-event": "{time} · {status}"
 }

@@ -17,6 +17,7 @@ import { Hono } from "hono"
 import type { AuthStatus } from "~/lib/config/settings-types"
 
 import { extractRequestApiKey, SSE_EVENTS_PATH } from "~/lib/auth/request-auth"
+import { getTaskSnapshot, taskTracker } from "~/lib/companion/task-runtime"
 import { writeConfig } from "~/lib/config/config"
 import { settingsEventBus } from "~/lib/config/settings-events"
 import {
@@ -173,11 +174,15 @@ describe("GET /settings/api/events (SSE)", () => {
     const response = await mount().request(SSE_EVENTS_PATH)
     const reader = bodyReader(response)
     try {
-      await readUntil(reader, "event: activity.snapshot")
+      await readUntil(reader, "event: tasks.snapshot")
       resetClientActivity()
       end("finished", 200)
       const next = getClientActivitySnapshot().generation
-      const frames = await readUntil(reader, next)
+      const frames = await readUntil(reader, "event: tasks.snapshot")
+      expect(frames).toContain(next)
+      expect(frames.indexOf("event: activity.snapshot")).toBeLessThan(
+        frames.indexOf("event: tasks.snapshot"),
+      )
       expect(frames).not.toContain(previous)
       expect(frames).toContain('"activeRequests":[]')
       expect(frames).toContain('"recentEvents":[]')
@@ -247,6 +252,43 @@ describe("GET /settings/api/events (SSE)", () => {
     controller.abort()
     await reader.cancel().catch(() => undefined)
   })
+})
+
+test("task SSE establishes a baseline before live sanitized lifecycle events", async () => {
+  resetClientActivity()
+  const snapshot = getTaskSnapshot()
+  const response = await mount().request(SSE_EVENTS_PATH)
+  const reader = bodyReader(response)
+  try {
+    taskTracker.observe(
+      {
+        sourceEventId: "private-file-offset",
+        taskId: "codex:live",
+        connectionId: "codex",
+        status: "started",
+        timestamp: Date.now(),
+      },
+      snapshot.generation,
+    )
+    taskTracker.observe(
+      {
+        sourceEventId: "private-file-finish",
+        taskId: "codex:live",
+        connectionId: "codex",
+        status: "completed",
+        timestamp: Date.now(),
+      },
+      snapshot.generation,
+    )
+    const frames = await readUntil(reader, '"status":"completed"')
+    expect(frames.indexOf("event: tasks.snapshot")).toBeLessThan(
+      frames.indexOf("event: tasks.event"),
+    )
+    expect(frames).toContain('"status":"running"')
+    expect(frames).not.toContain("private-file")
+  } finally {
+    await reader.cancel()
+  }
 })
 
 describe("SSE query-string key is path-scoped (extractRequestApiKey)", () => {

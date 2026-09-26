@@ -4,3 +4,11 @@
   - **Stable echo helper, not a versioned binary path.** The `apiKeyHelper` value emits the resolved key directly: `echo '<key>'` through `/bin/sh -c` on macOS/Linux, or a base64-decoding `powershell.exe` command through `cmd.exe` on Windows (where POSIX single quotes are literal). Maximal records an exact-command SHA-256 fingerprint in `_maximalHelper`; a matching marker proves ownership, while an unmarked echo command or edited marked command is left untouched. API-key create/update/delete refreshes an enabled owned helper immediately. Binary-backed `"<abs-path-to-maximal>" api claude-code`, Bun runtime, and legacy `--apiKeyHelper claude-code` forms are recognized as pre-v0.4.42 maximal artifacts and migrated to the stable strategy on the next boot/apply.
   - **Reverts to the prior state on disable.** Toggling Claude Code off restores `env.ANTHROPIC_BASE_URL` and `apiKeyHelper` to exactly what was there before maximal first wrote them (or removes them if they were absent), via a `_maximalPrior` snapshot maximal stores in the file. `CLAUDE_CODE_AUTO_MODE_SERVER` is added only when absent and removed only when the snapshot proves Maximal added it and its value is still `"0"`; existing values and later user edits survive. A pre-existing *foreign* `apiKeyHelper` / base URL is never overwritten in the first place — enable refuses with a conflict surfaced in Settings → Apps.
 - **Opencode plugin:** Copy `.opencode/plugins/subagent-marker.js` to `~/.config/opencode/plugins/`.
+
+## Companion task observations
+
+CoPo adds owned Claude Code observers for prompt start, permission waits, tool
+resume, failure and session exit when applying managed routing. It preserves
+existing hooks and removes only its exact additions on disconnect. No `Stop`
+completion hook is installed: Stop can be vetoed. Completion is observed from
+local finished-turn records. See [lifecycle scope and limitations](dev/companion-implementation.md#local-task-lifecycle--september-26-2026).
