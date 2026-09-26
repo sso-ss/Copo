@@ -1,151 +1,221 @@
 # CoPo
 
-CoPo 0.1.0 is a fork of [Maximal](https://github.com/stuffbucket/maximal), with Codex CLI and Desktop routing. The existing `maximal` command, routing identifiers, data directory, and `com.sso-ss.modelrelay` bundle identifier are retained for compatibility. GitHub repository and update-feed addresses retain their current URLs.
+A little companion for your AI tools.
 
-Local proxy that lets Anthropic-API and OpenAI-API clients (Claude Code,
-Claude Desktop in Cowork mode, Codex, etc.) talk to GitHub Copilot's
-backend, including GitHub Enterprise deployments. It adds a server-side
-web-tools agent loop, model-id rewriting for Claude Desktop's picker,
-and an Ollama Cloud–backed search/fetch executor.
+<img src="shell/src-tauri/icons/128x128.png" alt="CoPo cheese icon" width="80" height="80">
 
-## What this gives you
+CoPo brings Claude Code, Claude Desktop, and local Codex sessions together
+through your GitHub Copilot account. It runs a local gateway and gives you a
+desktop cat that works alongside you, celebrates completed tasks, and reacts
+when something needs attention.
 
-Run the proxy locally, point your client at it, and Copilot serves the
-model. Claude Code thinks it's talking to `api.anthropic.com`; Codex
-thinks it's talking to `api.openai.com`; both are actually hitting GHC.
-GHE is supported via `COPILOT_API_ENTERPRISE_URL`.
+Manage your tools, models, account, and usage in one place, with warm neutral
+colors, rounded controls, and a companion you can make your own.
 
-Server-side web tools (`web_search_20250305`, `web_fetch_20250910`)
-that Copilot rejects natively are resolved by an internal agent loop:
-the proxy strips the server-side declaration, substitutes a
-client-side shim, drives the model through tool round-trips with
-Copilot, and synthesizes the Anthropic-shaped result blocks back to
-the client. Set `OLLAMA_API_KEY` to enable real search via ollama.com's
-hosted endpoints; otherwise search returns `unavailable` and fetch
-runs in-process.
+**Status:** pre-alpha, version 0.1.0. Local task monitoring is implemented for
+Claude Code and Codex; full live acceptance testing of the packaged app is
+still in progress. See the [implementation notes](docs/dev/companion-implementation.md)
+for current coverage and limitations.
 
-## Layout
+## What CoPo does
 
-```
-src/                       Proxy source (request handlers, web-tools agent,
-                           id rewriter, executors, services).
-tests/                     bun-test suites.
-docs/admin/                MDM reference, Cowork client config notes.
-docs/spec/                 Architecture specs (web-tools, tool-bridge).
-scripts/                   Operator helpers (e.g. install-cowork-egress.sh).
-contrib/                   Read-only reference (opencode-copilot auth pattern,
-                           Ollama anthropic spike).
-LICENSE                    MIT.
-THIRD-PARTY-LICENSE        Bundled-dependency license pointer (npm SBOM)
-                           and site-asset attributions (shaders, sprites).
-```
+- **Keeps you company.** The desktop cat reflects work, waiting, completion,
+  and interruptions. Click it to open your connections, or drag it somewhere
+  comfortable on your screen.
+- **Connects your tools.** Settings → Apps detects supported installations and
+  offers Configure and Disconnect, with installation help when an app is missing.
+- **Keeps settings together.** Manage GitHub accounts, model routing, and API
+  keys without switching between separate configuration files.
+- **Shows usage.** Review Copilot allowances and recorded token usage in
+  Settings → Usage and the Dashboard.
+- **Feels at home.** Choose System, Light, or Dark appearance, adjust your
+  buddy's size, and preview its poses and gestures in Personalization.
+- **Works as a gateway.** Other compatible tools can use its Anthropic- and
+  OpenAI-compatible endpoints with a CoPo API key.
 
-## Install
+CoPo runs locally; model requests are sent to GitHub Copilot. You need a
+GitHub account with access to Copilot and the models you want to use.
 
-### Homebrew (macOS, Apple Silicon)
+## Get started
 
-```sh
-brew install stuffbucket/tap/maximal
-```
+With a current CoPo desktop build:
 
-This taps `stuffbucket/tap` automatically and installs the `maximal`
-command. Authenticate once, then run it in the foreground:
+1. Open **CoPo** and sign in with GitHub.
+2. Open **Settings → Apps** and choose **Configure** beside your tool.
+3. If the tool is missing, follow the installation help, then choose
+   **Check again**. Claude Code has a copyable install command; Claude Desktop
+   has a link to its official download page.
+4. Restart the configured tool and start a fresh session. For Codex Desktop,
+   create a new local chat so it picks up the CoPo provider.
+5. Send a request. CoPo's connections panel will reflect the tool's activity.
 
-```sh
-maximal auth --verbose                       # one-time device flow
-maximal start --account-type enterprise      # listen on :4141
-```
+**Configured** means CoPo saved the tool's configuration. Live request activity
+provides the evidence that the connection is working. Use **Disconnect** to
+remove CoPo's managed configuration when you want to stop routing that tool
+through it.
 
-Or run it as a login-persistent background service (logs to
-`$(brew --prefix)/var/log/maximal.log`):
+Keep CoPo running while your tools use its gateway. After installing an updated
+build, quit and reopen CoPo to load it.
 
-```sh
-brew services start maximal
-```
+### Supported tools
 
-Upgrade later with:
+| Tool | Setup | Companion activity |
+|---|---|---|
+| Claude Code | Configure in Settings → Apps | Requests and local task starts, waits, completion, cancellation, and failure |
+| Claude Desktop / Cowork | Configure its third-party inference profile | Request activity; whole-task completion is not yet supported |
+| Codex CLI and Desktop | One shared configuration in Settings → Apps | Requests and local task lifecycle for sessions using CoPo's provider |
+| Other compatible API clients | Create an API key and configure the client's base URL | Request activity attributed to that key |
+| Copilot CLI | Coming soon | Not yet supported |
 
-```sh
-brew update && brew upgrade maximal
-```
+Codex CLI and Desktop share a connection and API key. Remote/cloud Codex
+sessions are outside local task monitoring. Local task observers depend on
+client record formats; unknown or missing completion records do not trigger
+a celebration.
 
-> The formula is Apple-Silicon-only — there is no Intel (`darwin-x64`)
-> build. On other platforms, run from source (below) or download a
-> binary from the
-> [latest release](https://github.com/stuffbucket/maximal/releases/latest).
+## Meet your companion
 
-## Run
+| Pose | When you will see it |
+|---|---|
+| Working | A request or supported task is running, including gaps between requests within a task |
+| Relaxing | A connected tool is ready, or a supported task is waiting for your input |
+| Happy | A supported task confirms completion, or a connection is first verified by a successful request |
+| Surprised | A task fails or is cancelled, a request is interrupted, or the gateway connection has a problem |
+| Hearts | You hover over the cat |
+| Sleeping | No tools are ready, sign-in is needed, or activity is unavailable |
 
-From source (for development), substitute `maximal` with `bun run ./src/main.ts`:
+Happy holds for **10 seconds**, and surprised normally holds for **4 seconds**.
+Ongoing work and gateway state take priority over reactions. Reopening the app
+does not replay celebrations from old tasks.
+
+In **Settings → Personalization → Try motions**, explore all ten poses and
+gestures individually, use **Play all**, or pause playback. The preview is
+separate from live task activity. With Reduce Motion enabled, the same poses
+remain available as still images.
+
+## Build from source
+
+The desktop instructions below target macOS. Install the Bun version pinned in
+[`.bun-version`](.bun-version), a Rust toolchain, and Xcode Command Line Tools.
+
+From a checkout of this repository:
 
 ```sh
 bun install
-bun run ./src/main.ts auth --verbose                       # one-time device flow
-bun run ./src/main.ts start --account-type enterprise      # listen on :4141
+bun run app:setup
+bun run app:dev
 ```
 
-Then point Claude Code at the proxy:
+To build the macOS app and disk image:
 
 ```sh
-ANTHROPIC_BASE_URL=http://localhost:4141 \
-ANTHROPIC_AUTH_TOKEN=anything \
-ANTHROPIC_MODEL=claude-sonnet-4-6-20260301 \
-claude
+bun run app:build
 ```
 
-## Configuration
+Tauri places the app and disk image under
+`shell/src-tauri/target/release/bundle/`. The build bundles the gateway, UI,
+fonts, and companion artwork.
 
-Settings can be supplied through five sources. Higher in the list
-wins:
+See [development commands](docs/commands.md) for faster UI iteration and the
+[release runbook](docs/release-runbook.md) for packaging and distribution.
+The upstream `stuffbucket/tap/maximal` Homebrew formula installs Maximal;
+it is not a CoPo installer.
 
-| # | Source | Lifetime | Notes |
-|---|---|---|---|
-| 1 | **CLI flags** | per-invocation | `--port`, `--account-type`, `--verbose`, etc. See `maximal start --help`. |
-| 2 | **Environment variables** | shell scope | `OLLAMA_API_KEY`, `ANTHROPIC_API_KEY`, `COPILOT_API_HOME`, `COPILOT_API_ENTERPRISE_URL`, `COPILOT_API_OAUTH_APP`. Bun also auto-loads `.env`. |
-| 3 | **Secrets files** | persistent, mode 0600 | `~/.local/share/maximal/secrets/<provider>` (e.g. `secrets/ollama`). Refused if mode is broader than 0600. |
-| 4 | **Config file** | persistent | `~/.local/share/maximal/config.json`. Schema-validated at boot; bad keys fail with a key path. Unknown keys warn but pass through. |
-| 5 | **Built-in defaults** | always | `src/lib/config.ts`. |
+### Run just the gateway
 
-### Knob reference
-
-| Knob | CLI | Env | File | Default |
-|---|---|---|---|---|
-| Listen port | `--port` | — | — | `4141` |
-| Account type | `--account-type` | — | — | `individual` |
-| Verbose logging | `--verbose` | — | — | off |
-| Manual approval | `--manual` | — | — | off |
-| Rate limit (s) | `--rate-limit` | — | — | unset |
-| Ollama API key | — | `OLLAMA_API_KEY` | `secrets/ollama` | unset |
-| Anthropic API key | — | `ANTHROPIC_API_KEY` | `secrets/anthropic` | `config.anthropicApiKey` |
-| GitHub token | `--github-token` | — | `app/github_token` | from `auth` flow |
-| App home dir | — | `COPILOT_API_HOME` | — | `~/.local/share/maximal` |
-| Enterprise URL | — | `COPILOT_API_ENTERPRISE_URL` | — | unset |
-| OAuth app ID | — | `COPILOT_API_OAUTH_APP` | — | upstream default |
-| Use Messages API | — | — | `useMessagesApi` | `true` |
-| Use Apply Patch | — | — | `useFunctionApplyPatch` | `true` |
-| Small model alias | — | — | `smallModel` | `gpt-5-mini` |
-| Log retention (days) | — | — | `logRetentionDays` | `7` (`0` = delete on cleanup tick) |
-
-To inspect what the proxy actually thinks its config is:
+You can use the gateway without the desktop companion. After `bun install`,
+authenticate once and start it from this checkout:
 
 ```sh
-maximal debug                    # human-readable
-maximal debug --json             # machine-readable
-curl http://localhost:4141/_debug/state | jq    # only when running with --verbose
+bun run ./src/main.ts auth
+bun run ./src/main.ts start
 ```
 
-Secrets are masked everywhere — the debug output reports `<env>` /
-`<file>` / `<config>` / `<unset>`, never the value.
+The default port is **4141**. Open
+[Settings](http://127.0.0.1:4141/ui/settings/) to configure your tools, or
+[Dashboard](http://127.0.0.1:4141/ui/dashboard/) to view usage.
 
-## Releasing
+For clients you configure manually, use `http://127.0.0.1:4141` as the
+Anthropic base URL or `http://127.0.0.1:4141/v1` as the OpenAI base URL,
+together with an enabled key from **Settings → API keys** and a supported model.
 
-`docs/release-runbook.md` is the canonical checklist. Merge the generated
-release PR, wait for the gated release workflow to publish, then merge the
-protected updates-manifest PR. `bun run release:manual` is an emergency local
-fallback; Maximal is not published to npm.
+When the CLI is installed, its name is `copo`. The `maximal` alias remains
+available for compatibility. Useful commands include:
 
-## Status
+```sh
+copo app list
+copo app codex --enable
+copo app codex --disable
+copo check-usage
+copo debug
+copo start --help
+```
 
-Pre-alpha. Functional end-to-end against GitHub Copilot. See
-`docs/spec/archive/web-tools.md` for the agent-loop spec and
-`docs/admin/claude-desktop-mdm.md` for Cowork-side configuration.
+When running from source, replace `copo` with `bun run ./src/main.ts`.
+
+## Configuration and local data
+
+Most everyday configuration is available in Settings. For command-line use:
+
+| Setting | Option |
+|---|---|
+| Gateway port | `start --port 4141` |
+| Copilot account type | `start --account-type individual`, `business`, or `enterprise` |
+| GitHub Enterprise host | `COPILOT_API_ENTERPRISE_URL` |
+| Custom data directory | `COPILOT_API_HOME` or `--api-home` |
+| Optional hosted web search | `OLLAMA_API_KEY` |
+| Troubleshooting output | `start --verbose` and `debug` |
+
+CoPo stores configuration, account credentials, usage data, and logs in
+`~/.local/share/copo` on macOS and Linux, or `%APPDATA%\copo` on Windows.
+Provider secrets can be stored in the data directory's `secrets/` folder;
+environment values take precedence. `copo debug` reports the effective
+configuration and secret sources without printing secret values.
+
+On upgrade, CoPo can migrate the legacy `maximal` data folder when no CoPo
+folder exists. Quit the old instance first. Existing stores are never merged
+or overwritten, and explicitly configured data directories are not migrated.
+See [storage migration](docs/dev/storage-migration.md) for details.
+
+Task monitoring reads local client lifecycle records. Its activity events
+contain status metadata, not prompts or responses, and it creates no new
+transcript store. This is separate from gateway request logging; see the
+[architecture guide](docs/architecture.md) for logging and diagnostics.
+
+The gateway also translates Anthropic server-side web tools into tool calls
+Copilot can handle. Hosted search uses an optional Ollama API key; without it,
+search reports unavailable and web fetching runs locally. See the
+[web-tools specification](docs/spec/archive/web-tools.md) for details.
+
+## Development and documentation
+
+| Path | Contents |
+|---|---|
+| `src/` | Gateway, authentication, app integrations, and task monitoring |
+| `shell/src/` and `shell/ui/` | Settings, Dashboard, and companion UI |
+| `shell/src-tauri/` | Native desktop shell and gateway lifecycle |
+| `tests/` | Automated test suites |
+| `docs/` | Architecture, setup references, design guides, and implementation notes |
+| `scripts/` | Development, build, and release helpers |
+
+Read [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) before making changes.
+Every interface follows the official [CoPo design style](DESIGN.md): warm
+neutrals, rounded corners, clear typography, and consistent controls across
+the companion, menus, Settings, and Dashboard.
+
+- [Development commands and checks](docs/commands.md)
+- [Architecture](docs/architecture.md)
+- [Companion implementation and known limits](docs/dev/companion-implementation.md)
+- [Codex integration](docs/dev/codex-integration.md)
+- [Claude Desktop / Cowork configuration](docs/admin/claude-desktop-mdm.md)
+- [Release process](docs/release-runbook.md)
+- [Report an issue](https://github.com/sso-ss/ModelRelay/issues)
+
+## Credits and license
+
+CoPo is a fork of [Maximal](https://github.com/stuffbucket/maximal), building
+on its GitHub Copilot gateway and client integrations. Some internal protocol
+names, sidecar filenames, and the `com.sso-ss.modelrelay` bundle identifier
+remain for compatibility.
+
+Licensed under [MIT](LICENSE). See [THIRD-PARTY-LICENSE](THIRD-PARTY-LICENSE)
+for bundled dependency and artwork attributions.
