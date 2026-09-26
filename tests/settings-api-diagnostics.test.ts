@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test"
 import { Hono } from "hono"
+import path from "node:path"
 
 import { createAuthMiddleware } from "~/lib/auth/request-auth"
 import { copilotBaseUrl } from "~/lib/config/api-config"
 import { DiagnosticsResponse } from "~/lib/config/settings-types"
+import { PATHS } from "~/lib/platform/paths"
 import { state } from "~/lib/runtime-state/state"
 import { server } from "~/server"
 import { observeContextManagementSupport } from "~/services/copilot/context-management-capabilities"
@@ -29,6 +31,9 @@ describe("GET /settings/api/diagnostics", () => {
       )
       // web_search surfaces which executor resolves web tools.
       expect(parsed.data.web_search.kind.length).toBeGreaterThan(0)
+      expect(parsed.data.paths?.data).toBe(PATHS.APP_DIR)
+      expect(parsed.data.paths?.config).toBe(PATHS.CONFIG_PATH)
+      expect(parsed.data.paths?.logs).toBe(path.join(PATHS.APP_DIR, "logs"))
     }
   })
 

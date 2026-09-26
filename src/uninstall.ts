@@ -216,6 +216,9 @@ export function installTargets(
     ]
   }
   const targets: Array<InstallTarget> = [
+    { path: path.join(home, ".local", "bin", "copo") },
+    { path: "/usr/local/bin/copo" },
+    { path: "/opt/homebrew/bin/copo" },
     { path: path.join(home, ".local", "bin", "maximal") },
     { path: "/usr/local/bin/maximal" },
     { path: "/opt/homebrew/bin/maximal" },
@@ -405,8 +408,7 @@ export const uninstall = defineCommand({
     purge: {
       type: "boolean",
       default: false,
-      description:
-        "Also remove ~/.local/share/maximal/secrets and the GitHub token",
+      description: "Also remove Copo’s saved settings and credentials",
     },
     force: {
       type: "boolean",

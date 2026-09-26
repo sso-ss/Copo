@@ -84,7 +84,10 @@ async function defaultReadPidfile(): Promise<number | null> {
  */
 export function looksLikeMaximalCommand(command: string): boolean {
   const cmd = command.trim().toLowerCase()
-  return /(?:^|\/)maximal(?:\s|$)/.test(cmd) || cmd.includes("maximal start")
+  return (
+    /(?:^|\/)(?:maximal|copo)(?:\s|$)/.test(cmd)
+    || cmd.includes("maximal start")
+  )
 }
 
 /** True if `pid`'s command line looks like a maximal proxy — the guard that

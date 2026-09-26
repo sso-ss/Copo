@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 
 import { defineCommand, runMain, parseArgs } from "citty"
+import os from "node:os"
+import path from "node:path"
 
 import { HELPER_SUBCOMMAND } from "./lib/auth/api-key-helper-tokens"
 import { bindElectronFetch } from "./lib/http/electron-fetch"
+import { resolveAppDir } from "./lib/platform/app-dir"
+import { prepareAppStorage } from "./lib/platform/storage-migration"
 import { BUILD_VERSION } from "./lib/update/build-info"
 
 const cliArgs = {
@@ -40,6 +44,22 @@ if (typeof args["enterprise-url"] === "string") {
   process.env.COPILOT_API_ENTERPRISE_URL = args["enterprise-url"]
 }
 
+// Migrate before any lazy command imports config, logs, or SQLite. Native
+// startup uses storage-path too, so it shares exactly the same convention.
+const storageEnv = {
+  platform: process.platform,
+  homedir: os.homedir(),
+  copilotApiHome: process.env.COPILOT_API_HOME,
+  appData: process.env.APPDATA,
+}
+const informational =
+  process.argv.length <= 2
+  || process.argv.some((arg) =>
+    ["--help", "--version", "-h", "-v"].includes(arg),
+  )
+const appDir =
+  informational ? resolveAppDir(storageEnv) : prepareAppStorage(storageEnv)
+
 if (typeof args.apiKeyHelper === "string") {
   const { runApiKeyHelper } = await import("./lib/auth/api-key-helper")
   process.exit(runApiKeyHelper(args.apiKeyHelper))
@@ -54,12 +74,24 @@ bindElectronFetch()
 // usage client, or auth stack it never touches.
 const main = defineCommand({
   meta: {
-    name: "maximal",
+    name: "copo",
     version: BUILD_VERSION,
     description:
       "Local proxy that exposes GitHub Copilot as OpenAI- and Anthropic-compatible HTTP endpoints.",
   },
   subCommands: {
+    "storage-path": () =>
+      Promise.resolve(
+        defineCommand({
+          meta: {
+            name: "storage-path",
+            description: "Resolve Copo’s saved-data folder.",
+          },
+          run: () => {
+            process.stdout.write(JSON.stringify(path.resolve(appDir)))
+          },
+        }),
+      ),
     auth: () => import("./auth").then((m) => m.auth),
     start: () => import("./start").then((m) => m.start),
     setup: () => import("./setup").then((m) => m.setup),

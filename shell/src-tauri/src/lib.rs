@@ -626,6 +626,7 @@ pub fn run() {
             personalization::set_companion_preferences,
         ])
         .setup(|app| {
+            prepare_data_directory(app.handle())?;
             personalization::load(app.handle());
             // Menu-bar app: start with no Dock icon. update_activation_policy
             // will flip to Regular when a Settings/Dashboard window becomes
@@ -1235,7 +1236,7 @@ async fn check_for_update(
         let download_url = payload
             .get("url")
             .and_then(serde_json::Value::as_str)
-            .unwrap_or("https://mxml.sh/maximal/")
+            .unwrap_or("https://github.com/sso-ss/ModelRelay/releases")
             .to_owned();
         Some(UpdateSnapshot {
             latest,
@@ -2059,53 +2060,33 @@ fn open_settings_window(app: &AppHandle, section: Option<&str>) {
     }
 }
 
-/// The maximal app-data root, resolved to stay in LOCKSTEP with the
-/// sidecar's own path convention (src/lib/paths.ts). Both must agree or
-/// the tray's "reveal" menu items open a different folder than the one
-/// the proxy reads/writes.
-///
-///   * `COPILOT_API_HOME` (env) wins on every platform when set.
-///   * Windows → `%APPDATA%\maximal` (dictated path contract).
-///   * Unix (macOS/Linux) → `~/.local/share/maximal`.
-///
-/// Returns None only if we can't even resolve the home/appdata base.
-fn maximal_data_dir(app: &AppHandle) -> Option<std::path::PathBuf> {
-    if let Some(home) = std::env::var_os("COPILOT_API_HOME") {
-        let p = std::path::PathBuf::from(home);
-        if !p.as_os_str().is_empty() {
-            return Some(p);
-        }
-    }
+/// Resolved by the sidecar before native preferences load. Sharing one
+/// resolver keeps config, credentials, logs, and native settings together.
+struct DataDirectory(std::path::PathBuf);
 
-    #[cfg(target_os = "windows")]
-    {
-        // %APPDATA% is the per-user roaming app-data root
-        // (C:\Users\<user>\AppData\Roaming). Falls back to Tauri's
-        // resolver if the env var is somehow unset.
-        if let Some(appdata) = std::env::var_os("APPDATA") {
-            let p = std::path::PathBuf::from(appdata);
-            if !p.as_os_str().is_empty() {
-                return Some(p.join("maximal"));
-            }
-        }
-        return app.path().app_data_dir().ok().map(|d| {
-            // app_data_dir() yields %APPDATA%\<identifier>; redirect to the
-            // sidecar's `maximal` folder so they stay in lockstep.
-            d.parent()
-                .map(|parent| parent.join("maximal"))
-                .unwrap_or_else(|| d.join("maximal"))
-        });
+fn prepare_data_directory(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    let command = app.shell().sidecar("maximal")?.args(["storage-path"]);
+    let output = tauri::async_runtime::block_on(command.output())?;
+    if !output.status.success() {
+        return Err(std::io::Error::other(
+            String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        ).into());
     }
+    let path: String = serde_json::from_slice(&output.stdout)?;
+    let directory = std::path::PathBuf::from(path);
+    if !directory.is_absolute() {
+        return Err(std::io::Error::other("Copo storage path must be absolute").into());
+    }
+    app.manage(DataDirectory(directory));
+    Ok(())
+}
 
-    #[cfg(not(target_os = "windows"))]
-    {
-        let home = app.path().home_dir().ok()?;
-        Some(home.join(".local").join("share").join("maximal"))
-    }
+fn copo_data_dir(app: &AppHandle) -> Option<std::path::PathBuf> {
+    app.try_state::<DataDirectory>().map(|state| state.0.clone())
 }
 
 fn do_reveal_config_dir(app: &AppHandle) {
-    let Some(dir) = maximal_data_dir(app) else {
+    let Some(dir) = copo_data_dir(app) else {
         return;
     };
     let _ = app.opener().open_path(dir.to_string_lossy(), None::<&str>);
@@ -2117,7 +2098,7 @@ fn do_reveal_config_dir(app: &AppHandle) {
 /// first-launch "CoPo is running" banner needs a locale before the picker
 /// has ever run this session, and the last explicit choice beats the OS locale.
 fn locale_file(app: &AppHandle) -> Option<std::path::PathBuf> {
-    maximal_data_dir(app).map(|d| d.join("locale"))
+    copo_data_dir(app).map(|d| d.join("locale"))
 }
 
 /// The persisted picker choice, if present and still a locale we ship.
@@ -2175,7 +2156,7 @@ fn retitle_windows(app: &AppHandle) {
 }
 
 fn do_reveal_logs_dir(app: &AppHandle) {
-    let Some(dir) = maximal_data_dir(app).map(|d| d.join("logs")) else {
+    let Some(dir) = copo_data_dir(app).map(|d| d.join("logs")) else {
         return;
     };
     // Sidecar creates this lazily on first request log. Create it

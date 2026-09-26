@@ -890,6 +890,63 @@ a:hover {
   border: 0;
 }
 
+/* Diagnostics uses grouped rows; long paths stay within the settings pane. */
+.diagnostics-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.diagnostics-list {
+  gap: 0;
+}
+
+.diagnostics-list .kv__row {
+  padding-block: var(--space-3);
+  border-block-end: var(--border-width-hairline) solid var(--border-subtle);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+}
+
+.diagnostics-list dt,
+.diagnostics-list dd,
+.diagnostics-path {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.diagnostics-list dd {
+  display: block;
+  line-height: var(--leading-lg);
+}
+
+.diagnostics-snapshot {
+  max-width: 100%;
+  max-height: var(--content-max);
+  overflow: auto;
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-lg);
+  color: var(--text-base-color);
+}
+
+.diagnostics-error {
+  padding: var(--space-3) var(--space-4);
+  border-inline-start: var(--border-width-heavy) solid var(--status-error);
+  background: var(--surface-card);
+  border-radius: var(--radius-input);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.diagnostics-error[hidden] {
+  display: none;
+}
+
+[data-field="diagnostics_feedback"]:empty {
+  display: none;
+}
+
 /* ---- Forms ---- */
 .form {
   display: flex;

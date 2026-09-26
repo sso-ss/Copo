@@ -15,42 +15,42 @@ const WIN_HOME = String.raw`C:\Users\alice`
 const WIN_APPDATA = String.raw`C:\Users\alice\AppData\Roaming`
 
 describe("resolveAppDir", () => {
-  it("uses ~/.local/share/maximal on linux", () => {
+  it("uses ~/.local/share/copo on linux", () => {
     expect(resolveAppDir({ platform: "linux", homedir: HOME })).toBe(
-      path.join(HOME, ".local", "share", "maximal"),
+      path.join(HOME, ".local", "share", "copo"),
     )
   })
 
-  it("uses ~/.local/share/maximal on macOS (darwin), unchanged", () => {
+  it("uses ~/.local/share/copo on macOS (darwin), unchanged", () => {
     expect(resolveAppDir({ platform: "darwin", homedir: HOME })).toBe(
-      path.join(HOME, ".local", "share", "maximal"),
+      path.join(HOME, ".local", "share", "copo"),
     )
   })
 
-  it(String.raw`uses %APPDATA%\maximal on win32`, () => {
+  it(String.raw`uses %APPDATA%\copo on win32`, () => {
     expect(
       resolveAppDir({
         platform: "win32",
         homedir: WIN_HOME,
         appData: WIN_APPDATA,
       }),
-    ).toBe(path.join(WIN_APPDATA, "maximal"))
+    ).toBe(path.join(WIN_APPDATA, "copo"))
   })
 
-  it("falls back to <home>/AppData/Roaming/maximal on win32 with no APPDATA", () => {
+  it("falls back to <home>/AppData/Roaming/copo on win32 with no APPDATA", () => {
     expect(resolveAppDir({ platform: "win32", homedir: WIN_HOME })).toBe(
-      path.join(WIN_HOME, "AppData", "Roaming", "maximal"),
+      path.join(WIN_HOME, "AppData", "Roaming", "copo"),
     )
   })
 
   it("treats a blank/whitespace APPDATA as unset on win32", () => {
     expect(
       resolveAppDir({ platform: "win32", homedir: WIN_HOME, appData: "  " }),
-    ).toBe(path.join(WIN_HOME, "AppData", "Roaming", "maximal"))
+    ).toBe(path.join(WIN_HOME, "AppData", "Roaming", "copo"))
   })
 
   it("COPILOT_API_HOME overrides on win32", () => {
-    const override = String.raw`D:\custom\maximal-home`
+    const override = String.raw`D:\custom\copo-home`
     expect(
       resolveAppDir({
         platform: "win32",
@@ -75,7 +75,7 @@ describe("resolveAppDir", () => {
   it("ignores a blank/whitespace COPILOT_API_HOME (falls through to default)", () => {
     expect(
       resolveAppDir({ platform: "linux", homedir: HOME, copilotApiHome: "  " }),
-    ).toBe(path.join(HOME, ".local", "share", "maximal"))
+    ).toBe(path.join(HOME, ".local", "share", "copo"))
   })
 
   it("logs land under <root>/logs on win32 (single-root model)", () => {
@@ -84,8 +84,6 @@ describe("resolveAppDir", () => {
       homedir: WIN_HOME,
       appData: WIN_APPDATA,
     })
-    expect(path.join(root, "logs")).toBe(
-      path.join(WIN_APPDATA, "maximal", "logs"),
-    )
+    expect(path.join(root, "logs")).toBe(path.join(WIN_APPDATA, "copo", "logs"))
   })
 })

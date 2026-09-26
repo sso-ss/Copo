@@ -33,6 +33,9 @@ function helperCommand(): { command: string; args: Array<string> } {
     }
   }
   const candidates = [
+    path.join(os.homedir(), ".local", "bin", "copo"),
+    "/opt/homebrew/bin/copo",
+    "/usr/local/bin/copo",
     path.join(os.homedir(), ".local", "bin", "maximal"),
     "/opt/homebrew/bin/maximal",
     "/usr/local/bin/maximal",

@@ -189,7 +189,7 @@ export function assessConfigFlags(
 /**
  * Resolve the app-data config path exactly as the app does
  * (src/lib/paths.ts → resolveAppDir): `$COPILOT_API_HOME` overrides everywhere;
- * else `%APPDATA%\maximal` on win32; else `~/.local/share/maximal`. Kept in
+ * else `%APPDATA%\copo` on win32; else `~/.local/share/copo`. Kept in
  * sync with paths.ts by mirroring its precedence — pure so it's testable.
  */
 export function resolveConfigPath(env: {
@@ -204,9 +204,9 @@ export function resolveConfigPath(env: {
     : env.platform === "win32" ?
       path.join(
         env.appData?.trim() || path.join(env.homedir, "AppData", "Roaming"),
-        "maximal",
+        "copo",
       )
-    : path.join(env.homedir, ".local", "share", "maximal")
+    : path.join(env.homedir, ".local", "share", "copo")
   return path.join(appDir, "config.json")
 }
 

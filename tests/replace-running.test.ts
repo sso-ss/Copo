@@ -22,6 +22,8 @@ describe("looksLikeMaximalCommand (the kill-no-stranger guard)", () => {
     ["maximal start", true],
     ["MAXIMAL START", true], // case-insensitive
     ["maximal", true], // bare binary name, no args — matches via ^…$
+    ["/Users/brian/.local/bin/copo start --port 4141", true],
+    ["copo start", true],
     ["  maximal  ", true], // bare name + whitespace — needs both trim AND ^…$
   ])("treats %p as a maximal proxy", (cmd, expected) => {
     expect(looksLikeMaximalCommand(cmd)).toBe(expected)
@@ -32,6 +34,8 @@ describe("looksLikeMaximalCommand (the kill-no-stranger guard)", () => {
     ["/Applications/CoPo.app/Contents/MacOS/maximal-shell", false],
     // Unrelated processes that merely contain the substring.
     ["/usr/bin/maximalist-editor", false],
+    ["/usr/bin/copodium-editor", false],
+    ["/Applications/CoPo.app/Contents/MacOS/copo-shell", false],
     ["node /some/maximalism/server.js", false],
     ["python3 -m maximalize", false],
     ["", false],

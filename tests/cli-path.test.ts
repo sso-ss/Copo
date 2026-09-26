@@ -88,9 +88,7 @@ describe("ensureCliSymlink", () => {
       platform: "darwin",
     })
     expect(r.skipped).toBe("not-app-bundle")
-    expect(fs.existsSync(path.join(dir, ".local", "bin", "maximal"))).toBe(
-      false,
-    )
+    expect(fs.existsSync(path.join(dir, ".local", "bin", "copo"))).toBe(false)
   })
 
   it("creates the bin dir, symlink, and PATH block on a fresh machine", () => {
@@ -102,7 +100,7 @@ describe("ensureCliSymlink", () => {
     expect(r.linked).toBe(true)
     expect(r.binDirCreated).toBe(true)
     expect(r.pathBlockAdded).toBe(true)
-    const link = path.join(dir, ".local", "bin", "maximal")
+    const link = path.join(dir, ".local", "bin", "copo")
     expect(fs.lstatSync(link).isSymbolicLink()).toBe(true)
     expect(fs.readlinkSync(link)).toBe(APP_EXEC)
     const zprofile = fs.readFileSync(path.join(dir, ".zprofile"), "utf8")
@@ -134,7 +132,7 @@ describe("ensureCliSymlink", () => {
   it("repoints a stale symlink to the new bundle path", () => {
     const bin = path.join(dir, ".local", "bin")
     fs.mkdirSync(bin, { recursive: true })
-    const link = path.join(bin, "maximal")
+    const link = path.join(bin, "copo")
     fs.symlinkSync("/old/CoPo.app/Contents/MacOS/maximal", link)
     const r = ensureCliSymlink({
       execPath: APP_EXEC,
@@ -148,7 +146,7 @@ describe("ensureCliSymlink", () => {
   it("refuses to clobber a real file the user owns", () => {
     const bin = path.join(dir, ".local", "bin")
     fs.mkdirSync(bin, { recursive: true })
-    const file = path.join(bin, "maximal")
+    const file = path.join(bin, "copo")
     fs.writeFileSync(file, "#!/bin/sh\necho not ours\n")
     const r = ensureCliSymlink({
       execPath: APP_EXEC,

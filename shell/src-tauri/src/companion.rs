@@ -38,7 +38,7 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
 }
 
 fn placement_file(app: &AppHandle) -> Option<std::path::PathBuf> {
-    maximal_data_dir(app).map(|dir| dir.join("companion-position.json"))
+    copo_data_dir(app).map(|dir| dir.join("companion-position.json"))
 }
 
 pub fn resize_pet(app: &AppHandle, size: personalization::BuddySize) {

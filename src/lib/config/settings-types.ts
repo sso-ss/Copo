@@ -80,6 +80,15 @@ export const DiagnosticsResponse = z.object({
   launch_path: z.string(),
   /** Coarse classification of `launch_path`. */
   launch_kind: z.enum(["dmg-app", "homebrew", "user-bin", "dev", "other"]),
+  /** Effective paths, including an explicit COPILOT_API_HOME override.
+   * Optional so the UI can still read an older sidecar's diagnostics. */
+  paths: z
+    .object({
+      data: z.string(),
+      config: z.string(),
+      logs: z.string(),
+    })
+    .optional(),
   pid: z.number().int(),
   uptime_ms: z.number().int(),
   account_type: z.string(),
@@ -94,7 +103,7 @@ export type DiagnosticsResponse = z.infer<typeof DiagnosticsResponse>
 /** Update-availability status — GET /settings/api/update-status. Best-effort:
  *  `latest` is null and `update_available` false whenever the check is disabled
  *  or the manifest fetch failed. `url` is the install-channel-neutral download
- *  page (mxml.sh), not a raw release asset. The `enabled` / `checked_at` /
+ *  page (Copo releases), not a raw release asset. The `enabled` / `checked_at` /
  *  `last_error` fields are diagnostic — they let the Settings UI show whether
  *  the mechanism is working and what it last reported. See update-check.ts. */
 export const UpdateStatusResponse = z.object({

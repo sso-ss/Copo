@@ -19,6 +19,7 @@
   "author": "stuffbucket",
   "type": "module",
   "bin": {
+    "copo": "./dist/main.js",
     "maximal": "./dist/main.js"
   },
   "files": [

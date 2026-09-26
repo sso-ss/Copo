@@ -24,7 +24,7 @@ pub struct Preferences { pub buddy_size: BuddySize, pub appearance: Appearance }
 pub struct PreferencesState(Mutex<Preferences>);
 
 fn path(app: &AppHandle) -> Option<std::path::PathBuf> {
-    maximal_data_dir(app).map(|dir| dir.join("personalization.json"))
+    copo_data_dir(app).map(|dir| dir.join("personalization.json"))
 }
 
 pub fn load(app: &AppHandle) {

@@ -116,7 +116,7 @@ export function ensureCliSymlink(
   const platform = opts.platform ?? process.platform
 
   const binDir = path.join(home, ".local", "bin")
-  const symlinkPath = path.join(binDir, "maximal")
+  const symlinkPath = path.join(binDir, "copo")
   const base: CliSymlinkResult = {
     symlinkPath,
     target: execPath,

@@ -133,6 +133,8 @@ function repaintDynamicI18n(): void {
   renderStaticComposites();
   if (currentAuthStatus) renderAccount(currentAuthStatus);
   if (lastDiagnostics) renderDiagnostics(lastDiagnostics);
+  if (lastUpdateStatus) renderUpdateStatus(lastUpdateStatus);
+  renderDiagnosticsFeedback();
 }
 
 /**
@@ -264,11 +266,11 @@ function renderLogsCopy(): void {
   fillWithNode(hint, "logs-where-hint", "tailCmd", monoCode("tail -F"));
 }
 
-/** Uninstall card copy: the intro hint (with a `maximal` <code> token) and the
- *  terminal hint (with a `maximal uninstall` <code> command). */
+/** Uninstall card copy: the intro hint (with a `copo` <code> token) and the
+ *  terminal hint (with a `copo uninstall` <code> command). */
 function renderUninstallCopy(): void {
   const hint = document.querySelector<HTMLElement>('[data-field="uninstall_hint"]');
-  fillWithNode(hint, "uninstall-hint", "cliName", monoCode("maximal"));
+  fillWithNode(hint, "uninstall-hint", "cliName", monoCode("copo"));
   const terminal = document.querySelector<HTMLElement>(
     '[data-field="uninstall_terminal_hint"]',
   );
@@ -276,7 +278,7 @@ function renderUninstallCopy(): void {
     terminal,
     "uninstall-terminal-hint",
     "uninstallCmd",
-    monoCode("maximal uninstall"),
+    monoCode("copo uninstall"),
   );
 }
 
@@ -389,7 +391,7 @@ async function runInAppUninstall(): Promise<void> {
     // generic message in plain-browser (app:ui, no Tauri host). Surface it
     // inline rather than leaving the user with no feedback.
     console.warn("invoke(uninstall_maximal) failed:", err);
-    setUninstallError(t("uninstall-err", { error: String(err) }));
+    setUninstallError(t("uninstall-err", { error: String(err), uninstallCmd: "copo uninstall" }));
   } finally {
     setBusy(false);
   }
@@ -504,6 +506,13 @@ function renderDiagnostics(data: DiagnosticsResponse): void {
   setField("web_search", formatWebSearch(data.web_search));
   setField("github_copilot_status", deriveGithubCopilotStatus(data.tokens));
   setField("rate_limit", formatRateLimit(data.rate_limit));
+  const unknown = t("diagnostics-unknown");
+  setField("data_path", data.paths?.data ?? unknown);
+  setField("config_path", data.paths?.config ?? unknown);
+  setField("diagnostics_logs_path", data.paths?.logs ?? unknown);
+  setField("logs_path", data.paths?.logs ?? unknown);
+  setField("uninstall_data_path", data.paths?.data ?? unknown);
+  setField("diagnostics_snapshot", JSON.stringify(data, null, 2));
 }
 
 /**
@@ -545,7 +554,7 @@ function formatLaunchSource(data: DiagnosticsResponse): string {
  *
  *   github | copilot | status
  *   -------+---------+--------------------------------------------------
- *   true   | true    | "Signed in, ready"
+ *   true   | true    | "Credentials available"
  *   true   | false   | "Token will refresh on first request"
  *   false  | false   | "Not signed in"
  *   false  | true    | "Inconsistent — try signing in again"
@@ -578,27 +587,54 @@ function setDiagnosticsError(message: string | null): void {
 }
 
 let lastDiagnostics: DiagnosticsResponse | null = null;
+let lastUpdateStatus: UpdateStatusResponse | null = null;
+let diagnosticsLoading = false;
+let diagnosticsFeedback: "loaded" | "copied" | "copy-error" | null = null;
+let diagnosticsLoadedAt: Date | null = null;
+
+function renderDiagnosticsFeedback(): void {
+  const message = diagnosticsFeedback === "loaded" && diagnosticsLoadedAt
+    ? t("diagnostics-refreshed", { time: diagnosticsLoadedAt.toLocaleTimeString() })
+    : diagnosticsFeedback === "copied"
+      ? t("common-copied")
+      : diagnosticsFeedback === "copy-error"
+        ? t("diagnostics-copy-error")
+        : "";
+  setField("diagnostics_feedback", message);
+}
+
+function setDiagnosticsLoading(loading: boolean): void {
+  diagnosticsLoading = loading;
+  document.querySelector("[data-diagnostics-root]")?.setAttribute("aria-busy", String(loading));
+  document.querySelectorAll<HTMLButtonElement>("[data-diagnostics-refresh], [data-diagnostics-retry]")
+    .forEach((button) => { button.disabled = loading; });
+  const copy = document.querySelector<HTMLButtonElement>('[data-action="copy-json"]');
+  if (copy) copy.disabled = loading || lastDiagnostics === null;
+}
 
 async function loadDiagnostics(): Promise<void> {
-  const root = document.querySelector<HTMLElement>("[data-diagnostics-root]");
-  if (!root) return;
-  root.setAttribute("aria-busy", "true");
+  if (diagnosticsLoading) return;
+  setDiagnosticsLoading(true);
   setDiagnosticsError(null);
   const result = await apiCall({
     kind: "diagnostics",
     method: "GET",
     path: "/settings/api/diagnostics",
   });
-  root.setAttribute("aria-busy", "false");
   if (!result.ok) {
-    setDiagnosticsError(t("diagnostics-err-load", { error: result.error }));
+    setDiagnosticsLoading(false);
+    setDiagnosticsError(t(lastDiagnostics ? "diagnostics-err-refresh" : "diagnostics-err-load", { error: result.error }));
     return;
   }
   lastDiagnostics = result.data;
+  diagnosticsLoadedAt = new Date();
+  diagnosticsFeedback = "loaded";
   renderDiagnostics(result.data);
+  renderDiagnosticsFeedback();
   // Best-effort, independent of the diagnostics fetch: the proxy caches the
   // GitHub ping for hours, so re-running on each section open is cheap.
-  void loadUpdateStatus();
+  await loadUpdateStatus();
+  setDiagnosticsLoading(false);
 }
 
 /** Human "3m ago"-style age from an ISO timestamp; falls back to the raw
@@ -626,7 +662,7 @@ function renderUpdateStatus(data: UpdateStatusResponse): void {
 }
 
 /**
- * The "Updates" outcome row. Three shapes: a newer release (offer the mxml.sh
+ * The "Updates" outcome row. Three shapes: a newer release (offer the Copo releases
  * link), up to date, or unknown (couldn't resolve a version — the "Update
  * check" row explains why; never claim "up to date" when we couldn't check).
  * The link opens in the system browser via the opener plugin.
@@ -699,11 +735,13 @@ async function loadUpdateStatus(): Promise<void> {
     path: "/settings/api/update-status",
   });
   if (!result.ok) {
+    lastUpdateStatus = null;
     // Sidecar unreachable — stay quiet, not alarming.
     setField("update_status", t("diagnostics-update-unknown"));
     setField("update_check", t("diagnostics-update-check-unavailable"));
     return;
   }
+  lastUpdateStatus = result.data;
   renderUpdateStatus(result.data);
 }
 
@@ -711,17 +749,20 @@ async function copyDiagnosticsAsJson(): Promise<void> {
   if (!lastDiagnostics) return;
   try {
     await navigator.clipboard.writeText(JSON.stringify(lastDiagnostics, null, 2));
+    diagnosticsFeedback = "copied";
   } catch (err) {
     console.error("clipboard write failed", err);
+    diagnosticsFeedback = "copy-error";
   }
+  renderDiagnosticsFeedback();
 }
 
 function wireDiagnostics(): void {
   document
-    .querySelector("[data-diagnostics-retry]")
-    ?.addEventListener("click", () => {
+    .querySelectorAll("[data-diagnostics-retry], [data-diagnostics-refresh]")
+    .forEach((button) => button.addEventListener("click", () => {
       void loadDiagnostics();
-    });
+    }));
   document
     .querySelector('[data-action="copy-json"]')
     ?.addEventListener("click", () => {
@@ -2038,7 +2079,7 @@ window.addEventListener("DOMContentLoaded", () => {
 window.addEventListener("hashchange", () => {
   syncFromHash();
   const section = readHashSection();
-  if (section === "diagnostics") void loadDiagnostics();
+  if (section === "diagnostics" || section === "logs") void loadDiagnostics();
   if (section === "apps") {
     window.dispatchEvent(new CustomEvent("maximal:apps-refresh"));
   }

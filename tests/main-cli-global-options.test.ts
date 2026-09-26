@@ -12,7 +12,7 @@ interface DebugInfo {
 }
 
 const cwd = fileURLToPath(new URL("../", import.meta.url))
-const tmpHome = path.join(os.tmpdir(), "maximal-test-foo")
+const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "copo-cli-options-"))
 
 afterAll(() => {
   fs.rmSync(tmpHome, { recursive: true, force: true })
@@ -20,7 +20,7 @@ afterAll(() => {
 const decoder = new TextDecoder()
 const baseEnv = {
   ...process.env,
-  COPILOT_API_HOME: "",
+  COPILOT_API_HOME: path.join(tmpHome, "default"),
   COPILOT_API_OAUTH_APP: "",
   COPILOT_API_ENTERPRISE_URL: "",
 }
@@ -44,6 +44,21 @@ const runDebugJson = (...args: Array<string>): DebugInfo => {
 }
 
 describe("root-level global CLI options", () => {
+  test("storage-path returns only the JSON path consumed by the desktop shell", () => {
+    const result = Bun.spawnSync({
+      cmd: [
+        process.execPath,
+        "run",
+        "./src/main.ts",
+        `--api-home=${tmpHome}`,
+        "storage-path",
+      ],
+      cwd,
+      env: baseEnv,
+    })
+    expect(result.exitCode).toBe(0)
+    expect(JSON.parse(decoder.decode(result.stdout))).toBe(tmpHome)
+  })
   test("supports --api-home=value before the subcommand", () => {
     const info = runDebugJson(`--api-home=${tmpHome}`)
 

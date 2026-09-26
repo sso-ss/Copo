@@ -19,6 +19,7 @@
 
 import consola from "consola"
 import { Hono } from "hono"
+import path from "node:path"
 
 import { describeExecutor } from "~/debug"
 import { copilotBaseUrl } from "~/lib/config/api-config"
@@ -29,6 +30,7 @@ import {
   type UpdateStatusResponse as UpdateStatusResponseT,
 } from "~/lib/config/settings-types"
 import { describeLaunchSource } from "~/lib/platform/cli-path"
+import { PATHS } from "~/lib/platform/paths"
 import { modelsCached, state, tokenPresence } from "~/lib/runtime-state/state"
 import { BUILD_VERSION } from "~/lib/update/build-info"
 import { getUpdateStatus } from "~/lib/update/update-check"
@@ -62,6 +64,11 @@ function buildDiagnostics(): DiagnosticsResponseT {
     source_branch: git.branch ?? null,
     launch_path: launch.path,
     launch_kind: launch.kind,
+    paths: {
+      data: PATHS.APP_DIR,
+      config: PATHS.CONFIG_PATH,
+      logs: path.join(PATHS.APP_DIR, "logs"),
+    },
     pid: process.pid,
     uptime_ms: Date.now() - PROCESS_START_MS,
     account_type: state.accountType,

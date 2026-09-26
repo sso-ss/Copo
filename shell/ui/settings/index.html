@@ -579,12 +579,8 @@
               <p class="card__hint" data-field="logs_where_hint"></p>
               <dl class="kv kv--bare">
                 <div class="kv__row">
-                  <dt data-i18n="logs-path-unix-label"></dt>
-                  <dd class="mono">~/.local/share/maximal/logs/</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="logs-path-windows-label"></dt>
-                  <dd class="mono">%USERPROFILE%\.local\share\maximal\logs\</dd>
+                  <dt data-i18n="diagnostics-logs-folder"></dt>
+                  <dd class="mono diagnostics-path" data-field="logs_path">…</dd>
                 </div>
                 <div class="kv__row">
                   <dt data-i18n="logs-retention-label"></dt>
@@ -604,109 +600,131 @@
           </section>
 
           <!-- DIAGNOSTICS -->
-          <section class="section" data-section="diagnostics" hidden>
+          <section class="section section--diagnostics" data-section="diagnostics" hidden>
             <header class="section__head">
               <h2 class="section__title" data-i18n="diagnostics-title"></h2>
               <p class="section__sub" data-i18n="diagnostics-sub"></p>
+              <div class="actions">
+                <button type="button" class="btn btn--primary" data-action="copy-json"
+                  data-i18n="diagnostics-copy-bundle" disabled></button>
+                <button type="button" class="btn btn--secondary" data-diagnostics-refresh
+                  data-i18n="common-refresh"></button>
+              </div>
+              <p class="section__sub" data-field="diagnostics_feedback" role="status" aria-live="polite"></p>
             </header>
 
-            <div data-diagnostics-root aria-busy="true">
-              <dl class="kv kv--bare">
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-proxy-version"></dt>
-                  <dd class="mono" data-field="version">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-updates"></dt>
-                  <dd data-field="update_status">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-update-check"></dt>
-                  <dd class="mono" data-field="update_check">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-git-sha"></dt>
-                  <dd class="mono" data-field="source_revision">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-launched-from"></dt>
-                  <dd class="mono" data-field="launch_source">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-sidecar-pid"></dt>
-                  <dd class="mono" data-field="pid">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-uptime"></dt>
-                  <dd class="mono" data-field="uptime">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-account-type"></dt>
-                  <dd class="mono" data-field="account_type">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-models-cached"></dt>
-                  <dd class="mono" data-field="models_cached">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-web-search"></dt>
-                  <dd class="mono" data-field="web_search">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-github-copilot"></dt>
-                  <dd class="mono" data-field="github_copilot_status">…</dd>
-                </div>
-                <div class="kv__row">
-                  <dt data-i18n="diagnostics-rate-limit"></dt>
-                  <dd class="mono" data-field="rate_limit">…</dd>
-                </div>
-              </dl>
-            </div>
-
-            <div
-              class="card__hint"
-              data-diagnostics-error
-              hidden
-              role="alert"
-            >
+            <div class="diagnostics-error" data-diagnostics-error hidden role="alert">
               <span data-error-message></span>
-              <button
-                type="button"
-                class="btn btn--ghost"
-                data-diagnostics-retry
-                data-i18n="common-retry"
-              ></button>
+              <button type="button" class="btn btn--ghost" data-diagnostics-retry
+                data-i18n="common-retry"></button>
             </div>
 
-            <div class="actions">
-              <button
-                type="button"
-                class="btn btn--primary"
-                data-action="copy-json"
-                data-i18n="diagnostics-copy-bundle"
-              ></button>
-              <button
-                type="button"
-                class="btn btn--secondary"
-                data-action="reveal-config"
-                data-i18n="reveal-config"
-              ></button>
-              <button
-                type="button"
-                class="btn btn--secondary"
-                id="restart-proxy"
-                disabled
-                data-i18n="diagnostics-restart-proxy"
-                data-i18n-title="diagnostics-restart-proxy-title"
-              ></button>
+            <div class="diagnostics-content" data-diagnostics-root aria-busy="true">
+              <section class="subsection" aria-labelledby="diagnostics-connection-title">
+                <h3 class="subsection__title" id="diagnostics-connection-title" data-i18n="diagnostics-connection-title"></h3>
+                <p class="section__sub" data-i18n="diagnostics-connection-hint"></p>
+                <dl class="kv diagnostics-list">
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-github-copilot"></dt>
+                    <dd data-field="github_copilot_status">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-account-type"></dt>
+                    <dd data-field="account_type">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-models-cached"></dt>
+                    <dd class="mono" data-field="models_cached">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-web-search"></dt>
+                    <dd data-field="web_search">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-rate-limit"></dt>
+                    <dd data-field="rate_limit">…</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section class="subsection" aria-labelledby="diagnostics-runtime-title">
+                <h3 class="subsection__title" id="diagnostics-runtime-title" data-i18n="diagnostics-runtime-title"></h3>
+                <dl class="kv diagnostics-list">
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-proxy-version"></dt>
+                    <dd class="mono" data-field="version">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-uptime"></dt>
+                    <dd class="mono" data-field="uptime">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-updates"></dt>
+                    <dd data-field="update_status">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-update-check"></dt>
+                    <dd data-field="update_check">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-git-sha"></dt>
+                    <dd class="mono" data-field="source_revision">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-launched-from"></dt>
+                    <dd class="mono" data-field="launch_source">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-sidecar-pid"></dt>
+                    <dd class="mono" data-field="pid">…</dd>
+                  </div>
+                </dl>
+                <div class="actions">
+                  <button type="button" class="btn btn--secondary" id="restart-proxy" disabled
+                    data-i18n="diagnostics-restart-proxy" data-i18n-title="diagnostics-restart-proxy-title"></button>
+                </div>
+              </section>
+
+              <section class="subsection" aria-labelledby="diagnostics-storage-title">
+                <h3 class="subsection__title" id="diagnostics-storage-title" data-i18n="diagnostics-storage-title"></h3>
+                <p class="section__sub" data-i18n="diagnostics-storage-hint"></p>
+                <dl class="kv diagnostics-list">
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-data-folder"></dt>
+                    <dd class="mono" data-field="data_path">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-config-file"></dt>
+                    <dd class="mono" data-field="config_path">…</dd>
+                  </div>
+                  <div class="kv__row">
+                    <dt data-i18n="diagnostics-logs-folder"></dt>
+                    <dd class="mono" data-field="diagnostics_logs_path">…</dd>
+                  </div>
+                </dl>
+                <div class="actions">
+                  <button type="button" class="btn btn--secondary" data-action="reveal-config" data-i18n="reveal-config"></button>
+                  <a class="btn btn--ghost" href="#logs" data-i18n="logs-title"></a>
+                </div>
+              </section>
+
+              <details class="advanced-section">
+                <summary class="advanced-section__summary">
+                  <span class="advanced-section__title" data-i18n="diagnostics-snapshot-title"></span>
+                </summary>
+                <div class="advanced-section__body">
+                  <p class="section__sub" data-i18n="diagnostics-snapshot-hint"></p>
+                  <pre class="diagnostics-snapshot" tabindex="0" data-i18n-aria-label="diagnostics-snapshot-title" data-field="diagnostics_snapshot">…</pre>
+                </div>
+              </details>
             </div>
 
-            <div class="card" data-uninstall-card>
-              <div class="card__head">
-                <h3 class="card__title" data-i18n="uninstall-title"></h3>
-              </div>
-              <div data-uninstall-body>
-                <!-- Hint embeds the `maximal` CLI token: rendered in main.ts
+            <details class="advanced-section" data-uninstall-card>
+              <summary class="advanced-section__summary">
+                <span class="advanced-section__title" data-i18n="uninstall-title"></span>
+              </summary>
+              <div class="advanced-section__body" data-uninstall-body>
+                <!-- Hint embeds the `copo` CLI token: rendered in main.ts
                      (renderUninstallCopy) with {cliName} as an ICU argument. -->
                 <p class="card__hint" data-field="uninstall_hint"></p>
                 <div class="uninstall-options">
@@ -717,9 +735,7 @@
                       data-uninstall-purge
                     />
                     <span data-i18n="uninstall-purge-label"></span>
-                    <span class="uninstall-options__note mono"
-                      >~/.local/share/maximal</span
-                    >
+                    <span class="uninstall-options__note mono diagnostics-path" data-field="uninstall_data_path">…</span>
                   </label>
                 </div>
                 <div
@@ -738,12 +754,12 @@
                     data-i18n="uninstall-button"
                   ></button>
                 </div>
-                <!-- Terminal hint embeds the `maximal uninstall` command:
+                <!-- Terminal hint embeds the `copo uninstall` command:
                      rendered in main.ts with {uninstallCmd} as an ICU
                      argument. -->
                 <p class="card__hint" data-field="uninstall_terminal_hint"></p>
               </div>
-            </div>
+            </details>
           </section>
         </main>
       </div>

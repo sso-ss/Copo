@@ -169,20 +169,20 @@ describe("resolveConfigPath", () => {
     ).toBe("/custom/home/config.json")
   })
 
-  it("uses ~/.local/share/maximal on macOS/Linux", () => {
+  it("uses ~/.local/share/copo on macOS/Linux", () => {
     expect(resolveConfigPath({ platform: "darwin", homedir: "/home/u" })).toBe(
-      "/home/u/.local/share/maximal/config.json",
+      "/home/u/.local/share/copo/config.json",
     )
   })
 
-  it(String.raw`uses %APPDATA%\maximal on win32`, () => {
+  it(String.raw`uses %APPDATA%\copo on win32`, () => {
     const p = resolveConfigPath({
       platform: "win32",
       homedir: String.raw`C:\Users\u`,
       appData: String.raw`C:\Users\u\AppData\Roaming`,
     })
     expect(p.replaceAll("\\", "/")).toBe(
-      "C:/Users/u/AppData/Roaming/maximal/config.json",
+      "C:/Users/u/AppData/Roaming/copo/config.json",
     )
   })
 })
