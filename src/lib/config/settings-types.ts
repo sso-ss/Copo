@@ -379,6 +379,7 @@ export const AppEntry = z.object({
       available_models: z.array(z.string()),
       managed: z.boolean(),
       notice: z.string().optional(),
+      uses_existing_setup: z.boolean().optional(),
     })
     .optional(),
 })

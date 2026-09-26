@@ -1,5 +1,8 @@
 # Failure modes — check these first
 
+Follow [DESIGN.md](../../DESIGN.md) as the authoritative standard. The older
+drift table below is historical evidence, not a current palette specification.
+
 If your output exhibits any of these patterns, **stop and re-read the
 linked doc before continuing**. These are the things that keep
 regressing across design iterations.
@@ -15,22 +18,20 @@ regressing across design iterations.
 - **Window has a visible H1 that duplicates the macOS titlebar text.**
   The H1 inside the content area is the *section* name, never the
   *window* name.
-- **More than one Fraunces moment per window** (beyond the brand
-  mark). Two display headings = the window has two competing
-  identities; fix the IA, not the type. → [`type.md`](type.md).
-- **Brand crimson on a button, focus ring, link, or active-nav
-  affordance.** Brand is identity-only. Interactive surfaces are
-  `--accent` (teal). → [`color.md`](color.md).
+- **Serif headings or oversized display text in utility screens.** Use the
+  shared rounded heading tokens and calm hierarchy. → [`type.md`](type.md).
+- **Old teal controls or crimson identity returning.** Use the neutral,
+  theme-aware `--accent`; preserve the cheese and cat artwork. → [`color.md`](color.md).
 
 ## Tokens & drift
 
 - **Inline raw `px`, `rem`, or `#hex` in a component file *or in a
   design doc.*** Reference a token. If no suitable token exists, add
-  one to `shell/src/tokens.css` and document it in
+  one to `shell/src/ui/styles/theme.ts` and document it in
   [`tokens.md`](tokens.md) before using it. The one allowed exception
   is the drift table below, where the conflict is the point.
-- **Editing a token value in only one place.** There are currently
-  three token-declaration sites; they are not in sync. See
+- **Editing generated tokens without their source.** Regenerate the shared
+  tokens and Dashboard stylesheet from the theme source. See
   [`change-checklists.md`](change-checklists.md) → *Changing a token
   value* for the full touchpoint list. This is the highest-risk class
   of design bug in the repo today.
@@ -39,10 +40,10 @@ regressing across design iterations.
   not imports. Anything missing from one is silently `inherit`-ed or
   `initial` in that window.
 
-## Known active drift (as of last audit — June 2026)
+## Historical drift audit — June 2026
 
-These should be triaged separately; do not "fix" them inline as part
-of an unrelated design change.
+These old values document an earlier failure. The shared generator now emits
+the current neutral palette and both theme selectors for all three surfaces.
 
 | Concern | `shell/src/tokens.css` | `shell/ui/dashboard/style.css` |
 |---|---|---|
@@ -57,7 +58,7 @@ of an unrelated design change.
 | `--font-display` (Fraunces) | present | absent |
 | Light theme block | present | absent |
 
-The Dashboard literally renders a different teal than Settings.
+The historical Dashboard used a different teal from Settings; do not restore it.
 
 ## Accessibility
 

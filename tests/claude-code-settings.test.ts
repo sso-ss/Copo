@@ -523,7 +523,7 @@ describe("applyProxyBaseUrl (end-to-end continued)", () => {
     ],
     [
       "application bundle",
-      '"/Applications/ModelRelay.app/Contents/MacOS/maximal" api claude-code',
+      '"/Applications/CoPo.app/Contents/MacOS/maximal" api claude-code',
     ],
     [
       "runtime",

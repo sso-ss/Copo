@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CoPo</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main id="pet" hidden>
+    <button id="cat" type="button" aria-label="CoPo Companion">
+      <canvas id="art" width="1024" height="1040" aria-hidden="true"></canvas>
+    </button>
+    <span id="pet-status" role="status"></span>
+    <button id="hint" type="button" hidden></button>
+  </main>
+  <main id="panel" hidden>
+    <header data-tauri-drag-region><strong data-tauri-drag-region><img class="brand-logo" src="../../assets/copo-icon.svg" alt="" data-tauri-drag-region><span data-tauri-drag-region>CoPo</span></strong><div class="header-actions">
+      <div id="account-menu">
+        <button id="avatar" type="button" aria-label="Account" aria-haspopup="menu" aria-expanded="false" aria-controls="profile-menu"><span id="initials">○</span><img id="photo" alt="" hidden></button>
+        <div id="profile-menu" class="menu" hidden>
+          <div id="profile-main" role="menu" aria-labelledby="avatar">
+            <div class="menu-account" role="presentation"><strong id="menu-account-name"></strong><span class="muted" data-i18n="companion-gateway"></span></div>
+            <button role="menuitem" data-section="account"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-.6 2.2-2 .9-2-.6-2 3.5 1.5 1.6v2.8L2.4 15l2 3.5 2-.6 2 .9L9 21h4l.6-2.2 2-.9 2 .6 2-3.5-1.5-1.6v-2.8L19.6 9l-2-3.5-2 .6-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></svg><span data-i18n="companion-settings"></span><kbd>⌘,</kbd></button>
+            <button id="language-trigger" role="menuitem" data-submenu="language-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="language-menu"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg><span data-i18n="common-language-label"></span><svg class="menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+            <div class="menu-divider" role="separator"></div>
+            <button role="menuitem" data-action="changelog"><span data-i18n="companion-changelog"></span></button>
+            <button id="learn-trigger" role="menuitem" data-submenu="learn-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="learn-menu"><span data-i18n="companion-learn-more"></span><svg class="menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+            <div class="menu-divider" role="separator"></div>
+            <button id="sign-out" role="menuitem" data-action="sign-out" data-i18n="account-sign-out"></button>
+            <button id="sign-in" role="menuitem" data-section="account" data-i18n="account-sign-in" hidden></button>
+          </div>
+          <div id="language-menu" role="menu" aria-labelledby="language-trigger" hidden>
+            <button class="menu-back" role="menuitem" data-menu-back><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg><span data-i18n="common-language-label"></span></button>
+            <div class="menu-divider" role="separator"></div>
+            <div id="language-options" role="group" data-i18n-aria-label="common-language-label"></div>
+          </div>
+          <div id="learn-menu" role="menu" aria-labelledby="learn-trigger" hidden>
+            <button class="menu-back" role="menuitem" data-menu-back><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg><span data-i18n="companion-learn-more"></span></button>
+            <div class="menu-divider" role="separator"></div>
+            <button role="menuitem" data-action="documentation" data-i18n="companion-documentation"></button>
+            <button role="menuitem" data-section="diagnostics" data-i18n="nav-diagnostics"></button>
+            <button role="menuitem" data-action="logs" data-i18n="nav-logs"></button>
+          </div>
+        </div>
+      </div>
+      <button class="close" data-action="close" data-i18n-aria-label="companion-close">×</button>
+    </div></header>
+    <p id="identity" class="muted"></p>
+    <section id="gateway-notice" hidden>
+      <p data-i18n="companion-upstream-help"></p>
+      <button data-section="account" data-i18n="nav-account"></button>
+    </section>
+    <section id="recovery" hidden>
+      <h1 data-i18n="companion-unavailable"></h1>
+      <p data-i18n="companion-recovery-help"></p>
+      <div class="actions"><button data-action="retry" data-i18n="native-tray-retry"></button><button data-action="logs" data-i18n="nav-logs"></button><button data-section="diagnostics" data-i18n="nav-diagnostics"></button></div>
+    </section>
+    <section id="tools-section">
+      <div class="section-heading"><h1 data-i18n="companion-tools"></h1><button id="add" data-section="apps" data-i18n="companion-add" disabled></button></div>
+      <div id="connections"></div>
+      <div id="empty"><p id="empty-copy"></p><button id="primary"></button></div>
+    </section>
+    <p id="action-error" role="alert" hidden></p>
+    <footer><span id="panel-status" role="status"></span><span data-i18n="companion-request-only" class="muted"></span></footer>
+  </main>
+  <script type="module" src="../../src/companion/main.ts"></script>
+</body>
+</html>

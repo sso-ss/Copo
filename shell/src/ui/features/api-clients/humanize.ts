@@ -9,6 +9,8 @@
  * raw text through (truncated at a reasonable cap so a giant HTML
  * 500-page doesn't blow up the layout).
  */
+import { connectionErrorMessage } from "../../connection-errors";
+
 const MAX_RAW_LEN = 280;
 
 export function humanize(raw: string | undefined | null): string {
@@ -27,6 +29,8 @@ export function humanize(raw: string | undefined | null): string {
       (parsed as { error: { message?: unknown } }).error !== null
     ) {
       const inner = (parsed as { error: { message?: unknown } }).error;
+      const connectionMessage = connectionErrorMessage("type" in inner ? inner.type : null);
+      if (connectionMessage) return connectionMessage;
       if (typeof inner.message === "string" && inner.message.length > 0) {
         return inner.message;
       }

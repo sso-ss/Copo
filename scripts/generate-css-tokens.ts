@@ -22,6 +22,13 @@ function processGroup(prefix: string, group: Record<string, string>): string[] {
   });
 }
 
+function generateThemeRules(): string {
+  return Object.entries(themes).map(([name, values]) => {
+    const declarations = Object.entries(values).map(([key, value]) => `  --${toKebabCase(key)}: ${value};`).join("\n");
+    return `[data-theme="${name}"] {\n  color-scheme: ${name};\n${declarations}\n}`;
+  }).join("\n\n");
+}
+
 function generateTokensCSS(): string {
   const rootLines: string[] = [
     "/* AUTO-GENERATED FROM shell/src/ui/styles/theme.ts */",
@@ -82,11 +89,7 @@ function generateTokensCSS(): string {
 
   rootLines.push("}\n");
 
-  const darkTheme = Object.entries(themes.dark).map(([k, v]) => `  --${toKebabCase(k)}: ${v};`).join("\n");
-  rootLines.push(`[data-theme="dark"] {\n${darkTheme}\n}\n`);
-
-  const lightTheme = Object.entries(themes.light).map(([k, v]) => `  --${toKebabCase(k)}: ${v};`).join("\n");
-  rootLines.push(`[data-theme="light"] {\n${lightTheme}\n}\n`);
+  rootLines.push(`${generateThemeRules()}\n`);
 
   return rootLines.join("\n");
 }
@@ -95,13 +98,13 @@ function updateUsageViewerCss() {
   const cssPath = resolve(REPO, "shell/ui/dashboard/style.css");
   let cssSrc = readFileSync(cssPath, "utf8");
 
-  // We only replace the :root { ... } block for the dashboard.
-  // The dashboard needs fewer things but it's safe to give it all the tokens.
+  // Keep the dashboard's independent stylesheet on the same theme palette.
   const rootLines: string[] = [
     ":root {"
   ];
   
-  rootLines.push("  /* Font stacks. No --font-display */");
+  rootLines.push("  /* Font stacks */");
+  rootLines.push(`  --font-display: ${fontStacks.display};`);
   rootLines.push(`  --font-body: ${fontStacks.body};`);
   rootLines.push(`  --font-mono: ${fontStacks.mono};`);
   
@@ -113,6 +116,8 @@ function updateUsageViewerCss() {
   Object.entries(tracking).forEach(([k, v]) => rootLines.push(`  --tracking-${k}: ${v};`));
   Object.entries(spacing).forEach(([k, v]) => rootLines.push(`  --space-${k}: ${v};`));
   Object.entries(radii).forEach(([k, v]) => rootLines.push(`  --radius-${k}: ${v};`));
+  Object.entries(borderWidth).forEach(([k, v]) => rootLines.push(`  --border-width-${k}: ${v};`));
+  Object.entries(size).forEach(([k, v]) => rootLines.push(`  --size-${k}: ${v};`));
   Object.entries(elevation).forEach(([k, v]) => rootLines.push(`  --elevation-${k}: ${v};`));
   
   rootLines.push(...processGroup("brand", brand as any));
@@ -122,7 +127,11 @@ function updateUsageViewerCss() {
   rootLines.push(...processGroup("status", status as any));
   rootLines.push(`  --link: var(--accent);`);
   rootLines.push(`  --link-hover: var(--accent-hover);`);
-  rootLines.push(`  --focus-ring: ${focusRing.dashboardExpr};`);
+  rootLines.push(`  --focus-ring-width: ${focusRing.width};`);
+  rootLines.push(`  --focus-ring-offset: ${focusRing.offset};`);
+  rootLines.push(`  --focus-ring-color: ${focusRing.color};`);
+  rootLines.push(`  --focus-ring: ${focusRing.expr};`);
+  Object.entries(layout).forEach(([k, v]) => rootLines.push(`  --${toKebabCase(k)}: ${v};`));
   
   const darkThemeLines = Object.entries(themes.dark).map(([k, v]) => {
      // Dashboard uses --surface-base for textMuted sometimes? We just provide the vars.
@@ -131,34 +140,13 @@ function updateUsageViewerCss() {
   rootLines.push(...darkThemeLines);
   
   rootLines.push("");
-  rootLines.push("  /* Legacy aliases maintained for usage-viewer */");
-  rootLines.push(`  --color-bg-darkest: var(--surface-base);`);
-  rootLines.push(`  --color-bg: var(--surface-card);`);
-  rootLines.push(`  --color-bg-soft: var(--surface-card);`);
-  rootLines.push(`  --color-bg-light-1: var(--surface-control);`);
-  rootLines.push(`  --color-bg-light-2: var(--border-subtle);`);
-  rootLines.push(`  --color-fg-dark: var(--text-muted);`);
-  rootLines.push(`  --color-fg-medium: var(--text-base-color);`);
-  rootLines.push(`  --color-fg-light: var(--text-base-color);`);
-  rootLines.push(`  --color-fg-lightest: var(--text-strong);`);
-  rootLines.push(`  --color-blue: var(--accent);`);
-  rootLines.push(`  --color-blue-accent: var(--accent-hover);`);
-  rootLines.push(`  --color-red: var(--status-error);`);
-  rootLines.push(`  --color-red-accent: var(--status-error-fg);`);
-  rootLines.push(`  --color-green: var(--status-success);`);
-  rootLines.push(`  --color-green-accent: var(--status-success-fg);`);
-  rootLines.push(`  --color-yellow: var(--status-warning);`);
-  rootLines.push(`  --color-yellow-accent: var(--status-warning-fg);`);
-  rootLines.push(`  --color-aqua-accent: var(--status-info-fg);`);
-  rootLines.push(`  --color-purple-accent: #c084fc; /* specific to dashboard */`);
-  rootLines.push(`  --color-gray: var(--text-muted);`);
-  rootLines.push(`  --color-gray-accent: var(--text-muted);`);
-
   rootLines.push("}");
   
   // replace from `:root {` down to `}`
-  const regex = /:root\s*\{[^}]+\}/m;
-  const nextSrc = cssSrc.replace(regex, rootLines.join("\n"));
+  const regex = /:root\s*\{[^}]+\}\s*/m;
+  const themeBlock = `/* Shared theme overrides: generated */\n${generateThemeRules()}\n/* End shared theme overrides */`;
+  const withoutThemes = cssSrc.replace(/\n\/\* Shared theme overrides: generated \*\/[\s\S]*?\/\* End shared theme overrides \*\/\n?/m, "");
+  const nextSrc = withoutThemes.replace(regex, `${rootLines.join("\n")}\n\n${themeBlock}\n\n`);
   writeFileSync(cssPath, nextSrc, "utf8");
 }
 

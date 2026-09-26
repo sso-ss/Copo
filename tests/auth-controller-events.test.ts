@@ -10,7 +10,7 @@
  * Together they prove the bus is wired end to end.
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test"
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test"
 
 import type { AuthStatus } from "~/lib/config/settings-types"
 
@@ -20,6 +20,11 @@ import {
   markSignedOut,
 } from "~/lib/auth/auth-controller"
 import { settingsEventBus } from "~/lib/config/settings-events"
+import {
+  __resetClientActivityForTests,
+  beginClientRequest,
+  getClientActivitySnapshot,
+} from "~/lib/http/client-activity"
 import {
   clearLastUpstreamRejection,
   setLastUpstreamRejection,
@@ -35,6 +40,7 @@ function capture(): { events: Array<AuthStatus>; stop: () => void } {
 
 beforeEach(() => {
   __resetAuthControllerForTests()
+  __resetClientActivityForTests()
   clearLastUpstreamRejection()
 })
 
@@ -44,6 +50,60 @@ afterEach(() => {
 })
 
 describe("auth.changed emission (ADR-0007 producer side)", () => {
+  test("a new session for the same login resets activity even within one clock tick", () => {
+    const clock = spyOn(Date, "now").mockReturnValue(1000)
+    try {
+      markSignedIn("octocat")
+      const end = beginClientRequest("test-key")
+      const previous = getClientActivitySnapshot().generation
+      markSignedIn("octocat")
+      end("finished", 200)
+      expect(getClientActivitySnapshot().generation).not.toBe(previous)
+      expect(getClientActivitySnapshot().recentEvents).toEqual([])
+    } finally {
+      clock.mockRestore()
+    }
+  })
+
+  test("switching account invalidates old requests before announcing the new identity", () => {
+    markSignedIn("first-account")
+    const end = beginClientRequest("shared-key")
+    const generation = getClientActivitySnapshot().generation
+    const snapshots: Array<string> = []
+    const stop = settingsEventBus.subscribe("auth.changed", () => {
+      snapshots.push(getClientActivitySnapshot().generation)
+    })
+    try {
+      markSignedIn("second-account")
+      end("finished", 200)
+      const snapshot = getClientActivitySnapshot()
+      expect(snapshot.generation).not.toBe(generation)
+      expect(snapshot.activity).toEqual([])
+      expect(snapshot.recentEvents).toEqual([])
+      expect(snapshots).toEqual([snapshot.generation])
+    } finally {
+      stop()
+    }
+  })
+
+  test("sign-out clears activity but an upstream warning does not", () => {
+    markSignedIn("octocat")
+    const end = beginClientRequest("test-key")
+    const generation = getClientActivitySnapshot().generation
+    setLastUpstreamRejection({
+      message: "Busy",
+      remediationUrl: null,
+      status: 429,
+    })
+    expect(getClientActivitySnapshot().generation).toBe(generation)
+    expect(getClientActivitySnapshot().activeRequests).toHaveLength(1)
+    markSignedOut()
+    end("stopped", 401)
+    expect(getClientActivitySnapshot().generation).not.toBe(generation)
+    expect(getClientActivitySnapshot().activeRequests).toEqual([])
+    expect(getClientActivitySnapshot().recentEvents).toEqual([])
+  })
+
   test("markSignedIn publishes the authenticated status", () => {
     const { events, stop } = capture()
     try {

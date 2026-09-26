@@ -28,6 +28,7 @@ import { refreshClaudeCodeApiKeyHelper } from "~/apps/claude-code/reconcile"
 import { generateApiKey } from "~/lib/auth/api-key-helper"
 import { getConfig, writeConfig } from "~/lib/config/config"
 import { API_KEY_VALUE_PATTERN } from "~/lib/config/config-schema"
+import { settingsEventBus } from "~/lib/config/settings-events"
 import {
   ApiKeyCreateRequest,
   ApiKeysListResponse,
@@ -36,6 +37,15 @@ import {
 } from "~/lib/config/settings-types"
 
 export const apiKeysRoutes = new Hono()
+
+apiKeysRoutes.use("*", async (c, next) => {
+  try {
+    await next()
+  } finally {
+    if (c.req.method !== "GET")
+      settingsEventBus.publish("connections.changed", {})
+  }
+})
 
 function buildListResponse(): ApiKeysListResponse {
   const config = getConfig()

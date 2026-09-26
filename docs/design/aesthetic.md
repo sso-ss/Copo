@@ -1,20 +1,18 @@
 # Aesthetic direction
 
+Follow [DESIGN.md](../../DESIGN.md), the official CoPo design standard.
+
 ## Brand personality
 
-**Warm + crafted + considered.** The brand mark (a brand-crimson
-rounded square with a wonky Fraunces "m"; the color is the
-`--brand` token) sets the tone: a tool made by a person, not a
-corporation. Friendly without being playful-cute. Confident without
-being terminal-stark.
+**Warm, neutral, rounded, and calm.** CoPo follows the original Companion's
+paper-like surfaces, ink text, soft controls, and friendly pixel artwork.
+Keep the adopted CoPo palette consistent across all windows.
 
-- **Voice:** clear, direct, second-person. "Sign in with GitHub" not
-  "Initiate OAuth flow." "We can't reach the proxy" not "ECONNREFUSED."
-- **Type:** Commissioner (humanist sans) does the body heavy lifting;
-  Fraunces appears in the brand mark and one display heading per
-  window. See [`type.md`](type.md).
-- **Restraint over decoration:** layout, type, and spacing carry the
-  feeling. Color is one surface, not the only surface.
+- **Voice:** clear, direct, and helpful. Describe the user's action or next step.
+- **Type:** rounded system headings and Pretendard body text, through the shared
+  font tokens. See [type.md](type.md).
+- **Restraint:** layout, spacing, and typography carry the hierarchy. Keep borders
+  and shadows subtle and reserve saturated colors for meaningful status.
 
 ## Humanist powerful
 
@@ -23,17 +21,11 @@ concerns onto humans (no raw config keys in the primary UI, no JSON
 dumps). Doesn't push human concerns into machine shapes (no chat UI
 for what should be a single button).
 
-## Reference apps
+## Reference
 
-Starting points, not destinations.
-
-- **Ollama Settings**: card-grouped sections, monochrome utility
-  icons paired with a single humanist accent (the drawn llama avatar).
-- **Claude / Anthropic Settings**: sidebar nav with restrained active
-  state, human-tone copy ("What should Claude call you?"), monitor /
-  sun / moon theme toggle.
-- **Anti-references**: Linear (too cold and dense), Slack (too
-  noisy), the `create-tauri-app` starter (too generic).
+The original Companion is the primary visual reference. The implemented CoPo
+Settings, Dashboard, and companion styles translate it into a shared neutral
+palette. Use existing tokens and components when adding features.
 
 ## Density
 
@@ -81,5 +73,5 @@ chrome. Drop them.
 - **Functional / utility icons:** monochrome, system-tinted, stroke
   ~1.5–2px at 16/20/24 sizes. Lucide or Phosphor as the source
   library; pick one and stick with it.
-- **Identity / accent:** the brand "m" appears once per window (top
-  of the window, near the heading). Never on every row.
+- **Identity / artwork:** use the supplied cheese mark and cat where they serve
+  a purpose. Keep them crisp and avoid repeating them on every row.

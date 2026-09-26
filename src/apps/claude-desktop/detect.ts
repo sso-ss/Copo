@@ -11,7 +11,8 @@ export function claudeAppCandidates(
   platform: NodeJS.Platform = process.platform,
   home: string = os.homedir(),
 ): Array<string> {
-  if (platform === "darwin") return [CLAUDE_APP_PATH]
+  if (platform === "darwin")
+    return [CLAUDE_APP_PATH, path.join(home, "Applications", "Claude.app")]
   if (platform === "win32") {
     const localAppData = windowsLocalAppData(home)
     return [
@@ -48,14 +49,14 @@ export function windowsMsixClaudeInstalled(home: string): boolean {
 
 /**
  * Is Claude Desktop installed? Real check on macOS and Windows; on any
- * other platform we can't tell, so return true (don't block).
+ * other platform the official desktop app is not supported.
  */
 export function claudeAppInstalled(
   platform: NodeJS.Platform = process.platform,
   home: string = os.homedir(),
 ): boolean {
   const candidates = claudeAppCandidates(platform, home)
-  if (candidates.length === 0) return true
+  if (candidates.length === 0) return false
   const hasCandidate = candidates.some((p) => {
     try {
       fs.statSync(p)

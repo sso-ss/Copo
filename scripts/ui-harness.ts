@@ -145,6 +145,13 @@ function broadcastAuth(): void {
   }
 }
 
+function broadcastConnections(): void {
+  const frame = enc.encode("event: connections.changed\ndata: {}\n\n")
+  for (const client of sseClients) {
+    try { client.enqueue(frame) } catch { sseClients.delete(client) }
+  }
+}
+
 const json = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
     status,
@@ -395,7 +402,11 @@ function serve(): ReturnType<typeof Bun.serve> {
         }
 
         if (path === "/settings/api/events") return serveEvents()
-        if (path.startsWith("/settings/api/")) return handleApi(req, path)
+        if (path.startsWith("/settings/api/")) {
+          const response = await handleApi(req, path)
+          if (req.method !== "GET" && (path.startsWith("/settings/api/apps/") || path.startsWith("/settings/api/api-keys"))) broadcastConnections()
+          return response
+        }
         if (path.startsWith("/ui/")) return serveUi(path)
         if (path === "/") return Response.redirect("/ui/settings/", 302)
         return new Response("Not found", { status: 404 })

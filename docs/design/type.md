@@ -1,19 +1,22 @@
 # Type system
 
-**Interface font: Pretendard Variable.** Used for body text and headings,
-with Latin and Korean glyphs bundled locally. The outlined brand wordmark
-keeps its existing artwork.
+Follow [DESIGN.md](../../DESIGN.md) for the official CoPo style.
+
+**Body font: Pretendard Variable.** Latin and Korean glyphs are bundled locally.
+Headings use the rounded system face through `--font-display`, with Pretendard
+as a fallback, matching the original Companion. Section headings use `--text-xl`
+and `--weight-xl` for a calm hierarchy. The brand wordmark keeps its artwork.
 
 **Ramp: 16px base, 1.2 ratio.** Always reference token names —
 never inline raw pixel/rem values in components. Values live in
-[`shell/src/tokens.css`](../../shell/src/tokens.css); vocabulary in
+[theme.ts](../../shell/src/ui/styles/theme.ts); vocabulary in
 [`tokens.md`](tokens.md).
 
 ## Usage by token name
 
 | Token | Use |
 |---|---|
-| `--text-xs` | Caption, footnote, helper text |
+| `--text-xs` | Glyph-only contexts such as keycaps; not helper prose |
 | `--text-sm` | Inline labels, dense rows, descriptions in Settings |
 | `--text-base` | Body, inputs, control labels. **Floor for multi-line prose.** |
 | `--text-md` | Lead body for single-section windows (Setup, Dashboard) |

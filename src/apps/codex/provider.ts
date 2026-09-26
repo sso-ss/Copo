@@ -54,7 +54,7 @@ export function codexProvider(providerId: string): string {
   const helper = helperCommand()
   return [
     `[model_providers.${JSON.stringify(providerId)}]`,
-    'name = "ModelRelay"',
+    'name = "CoPo"',
     `base_url = ${JSON.stringify(CODEX_BASE_URL)}`,
     'wire_api = "responses"',
     "",
@@ -74,7 +74,7 @@ async function readHelperKey(
   const expected = resolveApiKey("codex")
   if (!expected.ok) {
     throw new Error(
-      "Add an enabled API client key in ModelRelay Settings before enabling Codex.",
+      "Add an enabled API client key in CoPo Settings before enabling Codex.",
     )
   }
   return new Promise((resolve, reject) => {
@@ -86,7 +86,7 @@ async function readHelperKey(
         if (error || stdout.trim() !== expected.key) {
           reject(
             new Error(
-              "Codex could not retrieve its ModelRelay key. Restart the updated ModelRelay app and try again.",
+              "Codex could not retrieve its CoPo key. Restart the updated CoPo app and try again.",
             ),
           )
           return
@@ -130,13 +130,13 @@ export async function verifyCodexProvider(
     )
   } catch {
     throw new Error(
-      "Could not reach ModelRelay on port 4141 or the routing check timed out. Check that ModelRelay is running and try again.",
+      "Could not reach CoPo on port 4141 or the routing check timed out. Check that CoPo is running and try again.",
     )
   }
   if (!response.ok) {
     await response.body?.cancel()
     throw new Error(
-      `Codex routing verification failed (HTTP ${response.status}). Check your ModelRelay account and selected model, then try again.`,
+      `Codex routing verification failed (HTTP ${response.status}). Check your CoPo account and selected model, then try again.`,
     )
   }
   const result: unknown = await response.json().catch(() => null)

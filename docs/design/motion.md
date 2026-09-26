@@ -1,10 +1,16 @@
 # Motion
 
-**Motion is utility, not delight.** Delight comes from typography,
-spacing, and copy.
+Settings motion remains restrained. The approved Companion artwork is a
+bounded exception: breathing, paws, typing, gaze, ear folds, tail movement,
+reactions, and hover hearts follow the Companion PRD. Preserve the supplied
+poses rather than stretching their silhouettes into a common bounding box.
+Companion Reduce Motion uses static poses and static hearts, with no crossfade.
 
 ## Timings
 
+- **5 seconds** — companion happy/verification pose hold. New active work or
+  gateway failure interrupts it; refreshes and duplicate events do not extend
+  it. Whole-task completion still requires an authoritative task event.
 - **150ms ease-out** — default for hover/active state changes.
 - **200ms ease-out** — layout shifts (window resize, card collapse,
   switch toggle).

@@ -87,6 +87,7 @@ async function buildDashboard(): Promise<void> {
     recursive: true,
     filter: (src) => !src.endsWith("main.ts"),
   })
+  await cp(join(SHELL_DIR, "assets/copo-icon.svg"), join(DASHBOARD_OUT, "copo-icon.svg"))
 }
 
 // Tauri's `frontendDist` (shell/dist) must hold the pre-boot splash it
@@ -96,16 +97,35 @@ async function buildDashboard(): Promise<void> {
 async function copyShellChrome(): Promise<void> {
   await mkdir(DIST_ROOT, { recursive: true })
   await cp(join(SHELL_DIR, "splash.html"), join(DIST_ROOT, "splash.html"))
+  await cp(join(SHELL_DIR, "assets"), join(DIST_ROOT, "assets"), { recursive: true })
   await Bun.write(
     join(DIST_ROOT, "index.html"),
-    "<!doctype html><meta charset=utf-8><title>ModelRelay</title>"
-      + "<p>ModelRelay is running. Open Settings from the menu-bar icon.</p>\n",
+    "<!doctype html><meta charset=utf-8><title>CoPo</title>"
+      + "<p>CoPo is running. Open Settings from the menu-bar icon.</p>\n",
   )
+}
+
+async function buildCompanion(): Promise<void> {
+  const out = join(DIST_ROOT, "companion")
+  await rm(out, { recursive: true, force: true })
+  await mkdir(out, { recursive: true })
+  const result = await Bun.build({
+    entrypoints: [join(REPO, "shell/ui/companion/index.html")],
+    outdir: out,
+    minify: true,
+    sourcemap: "none",
+  })
+  if (!result.success) throw new Error(`companion build failed: ${result.logs.join("\n")}`)
+  await cp(join(REPO, "shell/ui/companion/artwork"), join(out, "artwork"), { recursive: true })
+  await mkdir(join(out, "vendor"), { recursive: true })
+  for (const name of ["pretendard-variable.woff2", "OFL-Pretendard.txt"]) {
+    await cp(join(SETTINGS_VENDOR, "fonts", name), join(out, "vendor", name))
+  }
 }
 
 async function buildAll(): Promise<void> {
   const t = Date.now()
-  await Promise.all([buildSettings(), buildDashboard(), copyShellChrome()])
+  await Promise.all([buildSettings(), buildDashboard(), copyShellChrome(), buildCompanion()])
   console.error(`[build-ui] built settings + dashboard → shell/dist/ui (${Date.now() - t}ms)`)
 }
 

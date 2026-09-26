@@ -1,4 +1,5 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
+import { t } from "../../i18n";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -8,6 +9,7 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   tone?: "default" | "danger";
   busy?: boolean;
+  busyLabel?: string;
   onConfirm: () => void | Promise<void>;
   onCancel: () => void;
 }
@@ -28,11 +30,13 @@ export function ConfirmDialog({
   cancelLabel = "Cancel",
   tone = "default",
   busy = false,
+  busyLabel = t("common-working"),
   onConfirm,
   onCancel,
 }: ConfirmDialogProps): JSX.Element | null {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const cancelRef = useRef<HTMLButtonElement | null>(null);
+  const titleId = useId();
 
   // Sync `open` prop with the imperative <dialog> state. showModal()
   // is what gives us the focus trap + backdrop; close() tears them
@@ -82,6 +86,8 @@ export function ConfirmDialog({
     <dialog
       ref={dialogRef}
       className="confirm-dialog"
+      aria-labelledby={titleId}
+      aria-busy={busy}
       onClose={onCancelGuard}
       onCancel={(e) => {
         e.preventDefault();
@@ -92,7 +98,7 @@ export function ConfirmDialog({
       }}
     >
       <div className="confirm-dialog__panel">
-        <h2 className="confirm-dialog__title">{title}</h2>
+        <h2 id={titleId} className="confirm-dialog__title">{title}</h2>
         <div className="confirm-dialog__body">{body}</div>
         <div className="confirm-dialog__actions">
           <button
@@ -112,7 +118,7 @@ export function ConfirmDialog({
             onClick={onConfirmClick}
             disabled={busy}
           >
-            {busy ? "Working…" : confirmLabel}
+            {busy ? busyLabel : confirmLabel}
           </button>
         </div>
       </div>

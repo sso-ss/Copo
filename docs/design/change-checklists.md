@@ -1,5 +1,7 @@
 # Change checklists
 
+Follow [DESIGN.md](../../DESIGN.md), the official CoPo design standard.
+
 Recipes for common design changes. Following the checklist costs a
 minute; not following one is how the codebase ends up with two
 different teals named `--accent` (see
@@ -7,7 +9,7 @@ different teals named `--accent` (see
 
 ## Token value hygiene (read first)
 
-- **Values live in `shell/src/tokens.css` only.** Design docs reference
+- **Values live in `shell/src/ui/styles/theme.ts` only.** Design docs reference
   tokens by name + purpose, never by value. The only allowed exception
   is [`failure-modes.md`](failure-modes.md)'s drift audit table.
 - If a doc shows a value, that's a bug — fix the doc.
@@ -15,17 +17,15 @@ different teals named `--accent` (see
 
 ## Changing a token value
 
-1. Edit `shell/src/tokens.css` (the declared ground truth).
-2. **Also edit `shell/ui/dashboard/style.css`** if the token is
-   redeclared there. The Dashboard is a single embedded HTML file
-   with no CSS imports — token declarations are independent. See
-   [`windows.md`](windows.md) for why.
-3. Update the value column in [`tokens.md`](tokens.md) if the value
-   appears there.
+1. Edit `shell/src/ui/styles/theme.ts` (the declared ground truth).
+2. Run `bun scripts/generate-css-tokens.ts`. Review the shared
+   `shell/src/ui/styles/tokens.css` and independent
+   `shell/ui/dashboard/style.css`, including both theme selectors.
+3. Update the purpose or scope in [`tokens.md`](tokens.md) if it changed;
+   keep literal values in the theme source.
 4. Search for any inlined raw value the token was supposed to replace:
-   `grep -rn '<old-value>' shell/src shell/ui`.
-5. Manually verify both windows: `bun run app:ui` for the Settings
-   window, open the proxy and visit `/ui/dashboard/` for the Dashboard.
+   `rg '<old-value>' shell/src shell/ui`.
+5. Build and review Settings, Dashboard, and the companion in both themes.
 6. If the change is a color, re-check WCAG AA contrast on both
    surface levels per [`color.md`](color.md).
 
@@ -36,8 +36,8 @@ different teals named `--accent` (see
 2. Add the row to [`tokens.md`](tokens.md) **first**, with `Purpose`,
    `Use for`, `Do NOT use for` filled in. A token without a clear
    role is a future drift source.
-3. Declare in `shell/src/tokens.css` (and the dashboard `style.css` if the
-   Dashboard needs it).
+3. Declare in `shell/src/ui/styles/theme.ts`, update the generator if a new
+   token group needs it, and regenerate both stylesheets.
 4. Use it. Don't inline the value anywhere else.
 
 ## Adding a new component
@@ -92,7 +92,7 @@ different teals named `--accent` (see
    instead of opening another.
 5. Position: center on first launch, then respect last position.
 6. **If sidecar-served:** add a token-declaration block matching
-   `tokens.css`. Mirror future token edits.
+   the shared theme source through the generator. Mirror future token edits.
 
 ## Touching `.design-context.md` itself
 

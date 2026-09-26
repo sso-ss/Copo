@@ -1,0 +1,97 @@
+/* Shared Settings navigation and companion menu controls. */
+.nav__item,
+.menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--size-2xl);
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--text-base-color);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-base);
+  line-height: var(--leading-lg);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav__item:hover,
+.menu button:hover,
+.nav__item:focus-visible,
+.menu button:focus-visible,
+.nav__item--active,
+.menu button[aria-checked="true"] {
+  background: var(--surface-control);
+  color: var(--text-strong);
+}
+
+.nav__item--active,
+.menu button[aria-checked="true"],
+.menu button.menu-back {
+  font-weight: var(--weight-md);
+}
+
+.nav__item:focus-visible,
+.menu button:focus-visible {
+  outline: var(--focus-ring);
+  /* Keep the same ring visible inside scrollable menus and sidebars. */
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+.switch input[type="checkbox"],
+.connection-switch {
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: var(--size-2xl);
+  height: var(--size-lg);
+  margin: 0;
+  padding: 0;
+  border: var(--border-width-hairline) solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-control);
+  cursor: pointer;
+}
+
+.switch input[type="checkbox"]::after,
+.connection-switch::after {
+  content: "";
+  position: absolute;
+  top: var(--space-1);
+  inset-inline-start: var(--space-1);
+  width: var(--size-xs);
+  height: var(--size-xs);
+  border-radius: var(--radius-pill);
+  background: var(--text-strong);
+}
+
+.switch input[type="checkbox"]:checked,
+.connection-switch[aria-checked="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.switch input[type="checkbox"]:checked::after,
+.connection-switch[aria-checked="true"]::after {
+  inset-inline-start: auto;
+  inset-inline-end: var(--space-1);
+  background: var(--accent-fg);
+}
+
+.switch input[type="checkbox"]:focus-visible,
+.connection-switch:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.switch input[type="checkbox"]:disabled,
+.connection-switch:disabled,
+.menu button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

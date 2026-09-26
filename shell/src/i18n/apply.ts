@@ -11,6 +11,7 @@
  */
 import { availableLocales, localeLabel, resolveLocale, setLocale, t } from "./index";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 /**
  * Push the active locale across the IPC boundary so the Tauri shell's
@@ -31,6 +32,7 @@ function syncNativeLocale(tag: string): void {
  * whose text fills the real attribute. Extend by adding a row — no new block.
  */
 const I18N_ATTRS: ReadonlyArray<{ attr: string; dataset: keyof DOMStringMap }> = [
+  { attr: "alt", dataset: "i18nAlt" },
   { attr: "aria-label", dataset: "i18nAriaLabel" },
   { attr: "title", dataset: "i18nTitle" },
   { attr: "placeholder", dataset: "i18nPlaceholder" },
@@ -100,4 +102,10 @@ export function wireLocalePicker(onChange: () => void): void {
     applyI18n(document);
     onChange();
   });
+  void listen<string>("companion:locale", ({ payload }) => {
+    setLocale(payload);
+    select.value = payload;
+    applyI18n(document);
+    onChange();
+  }).catch(() => { /* Plain browser has no native event channel. */ });
 }

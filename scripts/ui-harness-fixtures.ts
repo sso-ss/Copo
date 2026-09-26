@@ -89,7 +89,7 @@ const baseDiagnostics: DiagnosticsResponse = {
   version: "0.4.36",
   source_revision: "abc1234",
   source_branch: "main",
-  launch_path: "/Applications/ModelRelay.app/Contents/MacOS/maximal",
+  launch_path: "/Applications/CoPo.app/Contents/MacOS/maximal",
   launch_kind: "dmg-app",
   pid: 4242,
   uptime_ms: 7_265_000,

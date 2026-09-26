@@ -1,4 +1,4 @@
-// ModelRelay tray + sidecar shell.
+// CoPo tray + sidecar shell.
 //
 // Tauri 2 menu-bar app. On launch we:
 //   1. Mark state Starting and install the tray immediately — the
@@ -34,7 +34,7 @@
 // is the single point of truth and is called from every show/hide path.
 //
 // Quit flow:
-//   1. Tray "Quit ModelRelay" fires `menu_id::QUIT`.
+//   1. Tray "Quit CoPo" fires `menu_id::QUIT`.
 //   2. `request_quit` pops a native confirm via tauri-plugin-dialog.
 //      No webview involvement, no JS, no event-emit/listen race.
 //   3. On accept → `app.exit(0)` → RunEvent::ExitRequested →
@@ -60,8 +60,10 @@ use tauri_plugin_shell::ShellExt;
 /// Native-string i18n (tray, notifications, window titles, quit dialog),
 /// backed by the same shell/src/i18n/*.json catalogs the webview renders with.
 mod native_i18n;
+mod companion;
+mod personalization;
 
-// Canonical ModelRelay port. Apps integrating with the proxy (Claude
+// Canonical CoPo port. Apps integrating with the proxy (Claude
 // Code, Cursor, custom scripts) only need to know this one URL:
 // http://localhost:4141. The Tauri shell and the standalone CLI both
 // bind here; the shell passes `--replace` when spawning so it always
@@ -605,6 +607,7 @@ pub fn run() {
         .manage(LatestUpdate::new())
         .manage(LastSidecarError::new())
         .manage(LocaleState::new())
+        .manage(personalization::PreferencesState::default())
         .invoke_handler(tauri::generate_handler![
             open_settings_at,
             open_dashboard,
@@ -615,8 +618,15 @@ pub fn run() {
             get_shell_api_key,
             subscribe_token_usage,
             set_locale,
+            companion::companion_action,
+            companion::companion_data,
+            companion::companion_toggle,
+            companion::companion_boot,
+            personalization::companion_preferences,
+            personalization::set_companion_preferences,
         ])
         .setup(|app| {
+            personalization::load(app.handle());
             // Menu-bar app: start with no Dock icon. update_activation_policy
             // will flip to Regular when a Settings/Dashboard window becomes
             // visible, and back to Accessory when the last one hides.
@@ -657,7 +667,10 @@ pub fn run() {
             // launching it otherwise just adds a tray icon the user may
             // not notice ("clicking did nothing"). The splash is closed by
             // apply_state on the first Running/Failed transition.
-            create_splash(app.handle());
+            if let Err(error) = companion::create(app.handle()) {
+                eprintln!("[companion] startup failed: {error}");
+                create_splash(app.handle());
+            }
 
             // Spawn sidecar. If this fails synchronously we go straight
             // to Failed — the user still sees the menubar.
@@ -703,29 +716,10 @@ pub fn run() {
             // Sole sidecar-kill site for a real shutdown.
             kill_sidecar(app_handle);
         }
-        // macOS delivers Reopen when the app is re-activated — clicking its
-        // notification banner ("ModelRelay is running"), its Dock icon, etc.
-        // Desktop notifications can't carry a routable button (the plugin's
-        // show() is fire-and-forget), so Reopen is how a banner click lands
-        // somewhere: if nothing's on screen, open Settings. Route to the
-        // account section when we're up but not signed in (the sign-in
-        // nudge), otherwise plain Settings.
+        // Reopening restores the companion's local panel, including recovery
+        // while the gateway is unavailable.
         #[cfg(target_os = "macos")]
-        RunEvent::Reopen {
-            has_visible_windows,
-            ..
-        } => {
-            if !has_visible_windows {
-                let section = if app_handle.state::<AppStatus>().get()
-                    == SidecarState::RunningUnauthenticated
-                {
-                    Some("account")
-                } else {
-                    None
-                };
-                open_settings_window(app_handle, section);
-            }
-        }
+        RunEvent::Reopen { .. } => focus_or_open_main_window(app_handle),
         _ => {}
     });
 }
@@ -1330,6 +1324,7 @@ fn apply_state(app: &AppHandle, next: SidecarState) {
     let Some(prev) = app.state::<AppStatus>().set(next) else {
         return; // unchanged
     };
+    let _ = app.emit("companion:gateway", companion::boot_state(next));
     if let Err(err) = refresh_tray(app, next) {
         eprintln!("[shell] tray refresh failed: {err}");
     }
@@ -1355,7 +1350,8 @@ fn apply_state(app: &AppHandle, next: SidecarState) {
         // mid-session drop (Authenticated→Unauthenticated, e.g. token expiry)
         // gets the notification only — don't yank a window open over whatever
         // they're doing; the notification click / tray brings it up on demand.
-        if prev == SidecarState::Starting && app.state::<SetupPromptShown>().claim()
+        if app.get_webview_window("companion").is_none()
+            && prev == SidecarState::Starting && app.state::<SetupPromptShown>().claim()
         {
             // Defer the auto-open until the splash has had its brand-minimum
             // display time. open_settings_window calls dismiss_splash
@@ -1451,7 +1447,7 @@ fn create_splash(app: &AppHandle) {
         "splash",
         WebviewUrl::App("splash.html".into()),
     )
-    .title("ModelRelay")
+    .title("CoPo")
     // Hand the splash its version before first paint (race-free — runs
     // ahead of page load, unlike an emitted event the page might miss).
     // The page renders it unless it's the dev `0.0.0` placeholder.
@@ -1779,6 +1775,11 @@ fn build_menu(
         true,
         Some("CmdOrCtrl+Q"),
     )?;
+    let companion_item = MenuItem::with_id(
+        app, "companion", native_i18n::tr(locale, if companion::visible(app) {
+            "native-companion-hide"
+        } else { "native-companion-show" }), true, None::<&str>,
+    )?;
     let sep1 = PredefinedMenuItem::separator(app)?;
 
     // An "Upgrade to v…" item leads the menu in the running states whenever the
@@ -1807,7 +1808,7 @@ fn build_menu(
                 false,
                 None::<&str>,
             )?;
-            Menu::with_items(app, &[&starting, &sep1, &settings_item, &quit_item])
+            Menu::with_items(app, &[&starting, &companion_item, &sep1, &settings_item, &quit_item])
         }
         SidecarState::RunningUnauthenticated => {
             let sign_in = MenuItem::with_id(
@@ -1820,6 +1821,7 @@ fn build_menu(
             let sep2 = PredefinedMenuItem::separator(app)?;
             let mut items: Vec<&dyn IsMenuItem<tauri::Wry>> = Vec::new();
             items.push(&sign_in);
+            items.push(&companion_item);
             // Update is its own section BELOW the primary action, shown only
             // when an update is available — never above sign-in.
             if let Some(up) = &upgrade_item {
@@ -1848,6 +1850,7 @@ fn build_menu(
             let sep2 = PredefinedMenuItem::separator(app)?;
             let mut items: Vec<&dyn IsMenuItem<tauri::Wry>> = Vec::new();
             items.push(&info);
+            items.push(&companion_item);
             // Update is its own section BELOW the account line, shown only when
             // an update is available — never above it.
             if let Some(up) = &upgrade_item {
@@ -1894,6 +1897,7 @@ fn build_menu(
                 app,
                 &[
                     &failed,
+                    &companion_item,
                     &retry,
                     &show_logs,
                     &open_config,
@@ -1907,6 +1911,10 @@ fn build_menu(
 }
 
 fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
+    if event.id().as_ref() == "companion" {
+        companion::toggle_visibility(app);
+        return;
+    }
     match event.id().as_ref() {
         menu_id::SETTINGS => open_settings_window(app, None),
         menu_id::DASHBOARD => open_dashboard_window(app),
@@ -2035,6 +2043,7 @@ fn open_settings_window(app: &AppHandle, section: Option<&str>) {
         SETTINGS_WINDOW_LABEL,
         WebviewUrl::External(url),
     )
+    .initialization_script(&locale_initialization(app))
     .title(title)
     .inner_size(900.0, 760.0)
     .min_inner_size(600.0, 560.0);
@@ -2105,7 +2114,7 @@ fn do_reveal_config_dir(app: &AppHandle) {
 /// Path to the persisted locale file — a one-line BCP-47 tag written by the
 /// `set_locale` command. Lives beside the sidecar's data so it survives
 /// restarts and, crucially, is readable BEFORE any webview loads: the
-/// first-launch "ModelRelay is running" banner needs a locale before the picker
+/// first-launch "CoPo is running" banner needs a locale before the picker
 /// has ever run this session, and the last explicit choice beats the OS locale.
 fn locale_file(app: &AppHandle) -> Option<std::path::PathBuf> {
     maximal_data_dir(app).map(|d| d.join("locale"))
@@ -2207,6 +2216,7 @@ fn open_dashboard_window(app: &AppHandle) {
         DASHBOARD_WINDOW_LABEL,
         WebviewUrl::External(url),
     )
+    .initialization_script(&locale_initialization(app))
     .title(native_i18n::tr(
         &app.state::<LocaleState>().get(),
         "native-window-dashboard-title",
@@ -2303,7 +2313,7 @@ fn update_activation_policy(app: &AppHandle) {
 #[cfg(not(target_os = "macos"))]
 fn update_activation_policy(_app: &AppHandle) {}
 
-/// macOS: make ModelRelay the active (frontmost) application. An Accessory
+/// macOS: make CoPo the active (frontmost) application. An Accessory
 /// menu-bar app is not active by default, so even after flipping to Regular
 /// a freshly-shown window won't take the foreground until the app itself is
 /// activated — that's the "had to click the Dock icon" symptom. No-op off
@@ -2359,7 +2369,7 @@ fn present_window(app: &AppHandle, window: &tauri::WebviewWindow) {
     }
 }
 
-/// Entry point for the tray's "Quit ModelRelay" item. Pops a native
+/// Entry point for the tray's "Quit CoPo" item. Pops a native
 /// confirm dialog via `tauri-plugin-dialog`; on accept, calls
 /// `app.exit(0)` which routes through `RunEvent::ExitRequested` →
 /// `kill_sidecar` (graceful SIGTERM + 3s SIGKILL escalation).
@@ -2405,24 +2415,22 @@ fn graceful_shutdown(app: &AppHandle) {
     app.exit(0);
 }
 
-/// Focus an existing main window, or open Settings if none exists.
-///
-/// Called from the single-instance plugin callback when the user
-/// re-launches ModelRelay without `--replace` — the natural "they double-
-/// clicked the dock icon" case. Settings is the default surface;
-/// Dashboard is the fallback if Settings isn't built yet but
-/// Dashboard is. If neither exists we open Settings fresh, which
-/// also runs `update_activation_policy` to bring the Dock icon back.
+/// Re-launching restores the companion and opens its connections panel.
+/// Keep Settings as a fallback if the local window cannot be created.
 fn focus_or_open_main_window(app: &AppHandle) {
-    for label in [SETTINGS_WINDOW_LABEL, DASHBOARD_WINDOW_LABEL] {
-        if let Some(window) = app.get_webview_window(label) {
-            present_window(app, &window);
-            return;
-        }
+    if let Err(error) = companion::show_panel(app) {
+        eprintln!("[companion] reopen failed: {error}");
+        open_settings_window(app, None);
     }
-    // Nothing built yet — fall through to opening Settings, which
-    // also handles the activation-policy flip.
-    open_settings_window(app, None);
+}
+
+/// Seed gateway-origin webviews from the native persisted preference before
+/// their locale picker boots; asset-origin companion storage is separate.
+fn locale_initialization(app: &AppHandle) -> String {
+    format!(
+        "try {{ localStorage.setItem('maximal.locale', {}); }} catch (_) {{}}",
+        serde_json::to_string(&app.state::<LocaleState>().get()).unwrap()
+    )
 }
 
 /// Tauri command exposed to the frontend.
@@ -2484,7 +2492,7 @@ fn restart_sidecar(app: AppHandle) {
 /// likewise mandatory: the running `.app` can't delete the bundle it's
 /// executing from, so the CLI removes the launchd agent, the
 /// `~/.local/bin/maximal` PATH symlink, and the other PATH binaries, then the
-/// user drags ModelRelay to the Trash to finish. Returns `Err(String)` (a
+/// user drags CoPo to the Trash to finish. Returns `Err(String)` (a
 /// human-readable reason) on a missing binary or non-zero exit so the webview
 /// can surface a non-blocking inline error instead of silently stranding the
 /// user. Mirrors the spawn+`.output()` shape of `reconcile_claude_code_revert`.
@@ -2541,6 +2549,7 @@ fn set_locale(app: AppHandle, locale: State<'_, LocaleState>, tag: String) -> Re
         return Ok(());
     }
     locale.set(tag.clone());
+    let _ = app.emit("companion:locale", tag.clone());
     eprintln!("[shell] native locale set to {tag}");
     // Persist so the NEXT launch's pre-webview strings (startup banner) match
     // this choice instead of falling back to the OS locale.

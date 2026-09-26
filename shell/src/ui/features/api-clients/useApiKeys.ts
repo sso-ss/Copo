@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiCall } from "../../../proxy/client";
 import type { ApiKeyEntry } from "../../../../../src/lib/config/settings-types";
 import { humanize } from "./humanize";
+import { useConnectionChanges } from "../../hooks/useConnectionChanges";
 
 /**
  * Data hook over `/settings/api/api-keys`. Owns the entries list, the
@@ -44,13 +45,16 @@ export function useApiKeys(): UseApiKeys {
   const [enforcing, setEnforcing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const revision = useRef(0);
 
   const reload = useCallback(async () => {
+    const current = ++revision.current;
     const result = await apiCall({
       kind: "api-keys-list",
       method: "GET",
       path: "/settings/api/api-keys",
     });
+    if (current !== revision.current) return;
     if (result.ok) {
       setEntries(result.data.entries);
       setEnforcing(result.data.enforcing);
@@ -60,6 +64,7 @@ export function useApiKeys(): UseApiKeys {
     }
     setIsLoading(false);
   }, []);
+  useConnectionChanges(reload);
 
   useEffect(() => {
     void reload();

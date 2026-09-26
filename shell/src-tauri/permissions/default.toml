@@ -11,7 +11,7 @@
 # and capabilities/loopback.json via the `default` permission set.
 
 [default]
-description = "Permissions for ModelRelay's own Tauri commands."
+description = "Permissions for CoPo's own Tauri commands."
 permissions = [
   "allow-open-settings-at",
   "allow-open-dashboard",
@@ -22,6 +22,7 @@ permissions = [
   "allow-get-shell-api-key",
   "allow-subscribe-token-usage",
   "allow-set-locale",
+  "allow-personalization",
 ]
 
 [[permission]]
@@ -68,3 +69,8 @@ commands.allow = ["subscribe_token_usage"]
 identifier = "allow-set-locale"
 description = "Adopt the in-app picker's locale for the shell's native chrome (tray menu, tooltip, notifications, window titles, quit dialog), invoked from the Settings/Dashboard webviews — a 'remote' loopback origin, so it needs an explicit permission."
 commands.allow = ["set_locale"]
+
+[[permission]]
+identifier = "allow-personalization"
+description = "Read and change shared appearance and desktop buddy size."
+commands.allow = ["companion_preferences", "set_companion_preferences"]

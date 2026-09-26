@@ -1,0 +1,23 @@
+---
+description: Follow CoPo's official Companion-inspired design style for every interface change.
+alwaysApply: true
+---
+
+# CoPo design standard
+
+Read and follow [DESIGN.md](../../DESIGN.md) before changing CoPo UI.
+It is the authoritative project design guide and supersedes conflicting
+historical design notes. Later explicit user direction takes precedence.
+
+- Keep warm neutral surfaces, ink text, rounded corners, calm spacing,
+  subtle borders, and restrained shadows in both light and dark mode.
+- Use existing tokens from `shell/src/ui/styles/theme.ts`; regenerate the
+  shared tokens and Dashboard stylesheet when values change.
+- Example: buttons use `--radius-input`; the buddy preview uses
+  `--radius-panel` and `--surface-companion-preview`.
+- Preserve the cat artwork and the personalization preview's size/theme sync.
+- Keep rounded headings, Pretendard body text, localization, keyboard focus,
+  contrast, and reduced-motion behavior.
+- Do not reintroduce teal controls, crimson branding, serif headings, or
+  nested cards from older guidance.
+- Apply this rule to CoPo work only; it does not set other projects' style.

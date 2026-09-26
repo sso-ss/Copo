@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Outline the "ModelRelay" wordmark from the Fraunces variable font to a
+# Outline the "CoPo" wordmark from the Fraunces variable font to a
 # font-independent SVG (so the splash always shows the brand wordmark
 # without depending on the font being loaded at boot). Mirrors the H1
 # display role at opsz 16, heavy weight, wonky terminals.
@@ -18,7 +18,7 @@ settings = {"opsz": 16, "wght": 900, "SOFT": 0, "WONK": 1}
 instantiateVariableFont(font, {key: value for key, value in settings.items() if key in axes}, inplace=True)
 gs, cmap, hmtx = font.getGlyphSet(), font.getBestCmap(), font["hmtx"]
 pos, x = [], 0
-for ch in "ModelRelay":
+for ch in "CoPo":
     g = cmap[ord(ch)]; pos.append((g, x)); x += hmtx[g][0]
 b = None
 def upd(v):
@@ -30,4 +30,4 @@ xMin,yMin,xMax,yMax = b; W,H = xMax-xMin, yMax-yMin
 parts=[]
 for g,xo in pos:
     sp=SVGPathPen(gs); gs[g].draw(TransformPen(sp,(1,0,0,1,xo,0))); parts.append(sp.getCommands())
-print(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W:.0f} {H:.0f}" fill="currentColor" aria-label="ModelRelay"><g transform="translate({-xMin:.1f} {yMax:.1f}) scale(1 -1)"><path d="{" ".join(parts)}"/></g></svg>')
+print(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W:.0f} {H:.0f}" fill="currentColor" aria-label="CoPo"><g transform="translate({-xMin:.1f} {yMax:.1f}) scale(1 -1)"><path d="{" ".join(parts)}"/></g></svg>')

@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ModelRelay — Dashboard</title>
+    <title>CoPo — Dashboard</title>
     <link
       rel="icon"
       type="image/svg+xml"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23c8334a'/%3E%3Ctext x='50%25' y='54%25' dy='.35em' text-anchor='middle' font-family='Georgia,serif' font-style='italic' font-size='42' font-weight='700' fill='%23fafafa'%3Em%3C/text%3E%3C/svg%3E"
+      href="./copo-icon.svg"
     />
 
     <!-- Pretendard is self-hosted in ./vendor/fonts/ for offline use. -->
@@ -27,9 +27,9 @@
     <script type="module" src="./main.js"></script>
   </head>
   <body class="antialiased">
-    <div id="app" class="min-h-screen p-4 sm:p-6">
-      <div class="max-w-7xl mx-auto">
-        <!-- Native macOS titlebar already reads "ModelRelay — Dashboard";
+    <div id="app" class="dashboard">
+      <div class="dashboard-content">
+        <!-- Native macOS titlebar already reads "CoPo — Dashboard";
              no in-window duplicate. Content starts at the control row. -->
 
         <!-- Period selector. Data refreshes automatically — Tauri
@@ -39,11 +39,10 @@
              agnostic control (same maximal.locale override as Settings,
              shared :4141 origin); options + selection are wired in
              main.ts (wireLocalePicker), which re-runs applyI18n live. -->
-        <div class="mb-6 flex items-center gap-3">
+        <div class="dashboard-toolbar">
           <span
             id="token-usage-period-label"
-            class="text-sm"
-            style="color: var(--text-muted); font-weight: var(--weight-md);"
+            class="control-label"
             data-i18n="dashboard-period-label"
             >Period</span
           >
@@ -78,15 +77,14 @@
               data-i18n-count="30"
             >30 days</button>
           </div>
-          <div class="lang-picker ml-auto flex items-center gap-2">
+          <div class="lang-picker">
             <label
-              class="text-sm"
-              style="color: var(--text-muted); font-weight: var(--weight-md);"
+              class="control-label"
               for="locale-select"
               data-i18n="common-language-label"
             ></label>
             <select
-              class="segmented-option"
+              class="language-select"
               id="locale-select"
               data-locale-select
             ></select>

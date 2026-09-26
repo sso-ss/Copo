@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { t } from "../../../i18n";
-import type { ClientActivity } from "../../../../../src/lib/http/client-activity";
+import type { ClientActivity } from "../../../../../src/lib/http/client-activity-types";
 import { Checkbox } from "../../components/Checkbox";
 import type { ApiKeyEntry } from "../../../../../src/lib/config/settings-types";
 import type { MutationResult } from "./useApiKeys";

@@ -140,7 +140,7 @@ pub fn tr(locale: &str, key: &str) -> String {
 ///
 /// `os_locale` is the system UI locale (from `sys_locale::get_locale()`), used
 /// only as the fallback for strings that fire before any webview — and thus any
-/// picker choice — exists (e.g. the first-launch "ModelRelay is running" banner).
+/// picker choice — exists (e.g. the first-launch "CoPo is running" banner).
 pub fn resolve_locale(persisted: Option<&str>, os_locale: Option<&str>) -> String {
     if let Some(tag) = persisted {
         if AVAILABLE.contains(&tag) {
@@ -174,7 +174,7 @@ mod tests {
         // en is the base; every native key we render must exist in it.
         let en = &catalogs()["en"];
         assert!(en.contains_key("native-tray-quit"));
-        assert_eq!(en["native-tray-quit"], "Quit ModelRelay");
+        assert_eq!(en["native-tray-quit"], "Quit CoPo");
     }
 
     #[test]
@@ -202,7 +202,7 @@ mod tests {
             if tag != "en" {
                 assert_ne!(
                     tr(tag, "native-tray-quit"),
-                    "Quit ModelRelay",
+                    "Quit CoPo",
                     "{tag} base looks aliased to en"
                 );
             }
@@ -212,9 +212,9 @@ mod tests {
     #[test]
     fn falls_back_region_to_language_to_en() {
         // es-MX carries no native overrides → resolves to the es language base.
-        assert_eq!(tr("es-MX", "native-tray-quit"), "Salir de ModelRelay");
+        assert_eq!(tr("es-MX", "native-tray-quit"), "Salir de CoPo");
         // A key only in en resolves there from any locale.
-        assert_eq!(tr("es", "native-tooltip-idle"), "ModelRelay");
+        assert_eq!(tr("es", "native-tooltip-idle"), "CoPo");
     }
 
     #[test]
@@ -240,7 +240,8 @@ mod tests {
         // Unknown override is ignored; OS locale best-fits by language.
         assert_eq!(resolve_locale(Some("fr-FR"), Some("es-419")), "es");
         // An OS locale for a language we don't ship falls through to en.
-        assert_eq!(resolve_locale(None, Some("ko-KR")), "en");
+        assert_eq!(resolve_locale(None, Some("zz-ZZ")), "en");
+        assert_eq!(resolve_locale(None, Some("ko-KR")), "ko");
         assert_eq!(resolve_locale(None, None), "en");
     }
 }

@@ -14,6 +14,7 @@ import { apiCall, subscribeAuthEvents } from "./proxy/client";
 import { mountApiClients } from "./ui/islands/api-clients-island";
 import { mountApps } from "./ui/islands/apps-island";
 import { mountModels } from "./ui/islands/models-island";
+import { startPersonalization } from "./ui/personalization";
 
 type SectionId =
   | "account"
@@ -21,6 +22,7 @@ type SectionId =
   | "endpoint"
   | "api-clients"
   | "models"
+  | "personalization"
   | "logs"
   | "diagnostics";
 
@@ -30,6 +32,7 @@ const SECTIONS: ReadonlyArray<SectionId> = [
   "endpoint",
   "api-clients",
   "models",
+  "personalization",
   "logs",
   "diagnostics",
 ];
@@ -123,6 +126,7 @@ function setBusy(on: boolean, label = t("common-working")): void {
  * sentences and any currently-rendered dynamic account state.
  */
 function repaintDynamicI18n(): void {
+  window.dispatchEvent(new CustomEvent("maximal:locale-changed"));
   renderStaticComposites();
   if (currentAuthStatus) renderAccount(currentAuthStatus);
   if (lastDiagnostics) renderDiagnostics(lastDiagnostics);
@@ -200,7 +204,7 @@ function monoCode(text: string): HTMLElement {
   return code;
 }
 
-/** "ModelRelay forwards requests … {plansLink}." with a live "See plans" link. */
+/** "CoPo forwards requests … {plansLink}." with a live "See plans" link. */
 function renderRequirementCallout(): void {
   const el = document.querySelector<HTMLElement>('[data-field="requirement_sub"]');
   fillWithNode(
@@ -336,7 +340,7 @@ function setUninstallError(message: string | null): void {
   row.hidden = false;
 }
 
-/** Wire the in-app "Uninstall ModelRelay…" button. Reads the two option
+/** Wire the in-app "Uninstall CoPo…" button. Reads the two option
  *  checkboxes in the card (not the dialog — neither window.confirm nor the
  *  native dialog supports in-dialog checkboxes), summarizes the choices into a
  *  confirm prompt, then runs the privileged `uninstall_maximal` command.
@@ -450,15 +454,6 @@ function wireEndpoint(): void {
       ].join("\n");
       void copyToClipboard(curl, ev.currentTarget as Element);
     });
-}
-
-function applyTheme(): void {
-  const root = document.documentElement;
-  if (root.dataset.theme) return;
-  const prefersLight =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: light)").matches;
-  root.dataset.theme = prefersLight ? "light" : "dark";
 }
 
 // ---- Diagnostics section ---------------------------------------------------
@@ -2004,7 +1999,7 @@ function wireAccount(): void {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  applyTheme();
+  void startPersonalization();
   applyI18n();
   // Sentences that embed a link/CLI token or a plural count aren't [data-i18n]
   // (they carry live DOM children); render them explicitly after the sweep.

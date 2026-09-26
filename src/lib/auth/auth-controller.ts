@@ -52,6 +52,7 @@ import {
   registerAuthStatusProjector,
 } from "~/lib/config/settings-events"
 import { CopilotAuthFatalError } from "~/lib/errors/error"
+import { resetClientActivity } from "~/lib/http/client-activity"
 import { createTeeLogger } from "~/lib/platform/logger"
 import { PATHS } from "~/lib/platform/paths"
 import { registerProcessCleanup } from "~/lib/platform/process-cleanup"
@@ -177,6 +178,22 @@ type AuthState =
 
 let authState: AuthState = { kind: "signed-out" }
 
+function activitySession(value: AuthState): ResumeTarget {
+  if (value.kind === "signed-in") return value
+  if (value.kind === "device-issued" || value.kind === "polling")
+    return value.flow.resume
+  return null
+}
+
+/** Display the active identity while an optional replacement sign-in is pending. */
+export function getCompanionAccount(): {
+  login: string
+  avatarUrl?: string
+} | null {
+  const session = activitySession(authState)
+  return session ? { login: session.login, avatarUrl: session.avatarUrl } : null
+}
+
 /**
  * The single writer for `authState`. Assigns the new union value, then
  * publishes the projected wire status on the settings event bus so the
@@ -189,8 +206,18 @@ let authState: AuthState = { kind: "signed-out" }
  * Test reset (`__resetAuthControllerForTests`) assigns directly, on
  * purpose — resetting fixtures must not fan out to real subscribers.
  */
-function setAuthState(next: AuthState): void {
+function setAuthState(next: AuthState, newSession = false): void {
+  const previousSession = activitySession(authState)
+  const nextSession = activitySession(next)
   authState = next
+  // A pending/cancelled sign-in preserves its resume session. Only a real
+  // change of identity/session or loss of authentication invalidates activity.
+  if (
+    newSession
+    || previousSession?.login !== nextSession?.login
+    || previousSession?.connectedSinceMs !== nextSession?.connectedSinceMs
+  )
+    resetClientActivity()
   emitAuthChanged()
 }
 
@@ -532,12 +559,15 @@ async function runPoller(flow: ActiveFlow): Promise<void> {
       log.warn("Auth-controller: failed to cache models after sign-in:", err)
     }
 
-    setAuthState({
-      kind: "signed-in",
-      login,
-      avatarUrl,
-      connectedSinceMs: Date.now(),
-    })
+    setAuthState(
+      {
+        kind: "signed-in",
+        login,
+        avatarUrl,
+        connectedSinceMs: Date.now(),
+      },
+      true,
+    )
   } catch (err) {
     if (flow.abort.signal.aborted) return
     const message = err instanceof Error ? err.message : String(err)
@@ -559,12 +589,15 @@ async function runPoller(flow: ActiveFlow): Promise<void> {
  */
 export function markSignedIn(login: string, avatarUrl?: string): void {
   noteAuthSuccess()
-  setAuthState({
-    kind: "signed-in",
-    login,
-    avatarUrl,
-    connectedSinceMs: Date.now(),
-  })
+  setAuthState(
+    {
+      kind: "signed-in",
+      login,
+      avatarUrl,
+      connectedSinceMs: Date.now(),
+    },
+    true,
+  )
 }
 
 /**

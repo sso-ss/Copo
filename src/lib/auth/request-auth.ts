@@ -4,6 +4,7 @@ import consola from "consola"
 
 import { getConfig, type AppConfig } from "~/lib/config/config"
 import { recordClient } from "~/lib/http/active-clients"
+import { UNATTRIBUTED_CLIENT_ID } from "~/lib/http/client-activity-types"
 import {
   isInferenceRequest,
   trackClientRequest,
@@ -227,7 +228,7 @@ export function createAuthMiddleware(
       && state.shellApiKey
       && requestApiKey === state.shellApiKey
     ) {
-      return { allow: true, id: null, label: "ModelRelay Settings" }
+      return { allow: true, id: null, label: "CoPo Settings" }
     }
     if (!isEnforcing()) {
       const entry = requestApiKey ? findApiKeyEntry(requestApiKey) : null
@@ -249,8 +250,8 @@ export function createAuthMiddleware(
       apiKeyLabel: decision.label,
       userAgent: c.req.header("user-agent") ?? "",
     })
-    if (decision.id && isInferenceRequest(c.req.method, c.req.path)) {
-      return trackClientRequest(c, next, decision.id)
+    if (isInferenceRequest(c.req.method, c.req.path)) {
+      return trackClientRequest(c, next, decision.id ?? UNATTRIBUTED_CLIENT_ID)
     }
     return next()
   }

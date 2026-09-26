@@ -7,9 +7,12 @@ component CSS references the token, not the value. Where one doesn't
 exist, this doc is canon — match the spec exactly rather than
 hand-rolling something nearby.
 
-Token values themselves live in
-[`shell/src/tokens.css`](../../shell/src/tokens.css); token vocabulary
-in [`tokens.md`](tokens.md).
+Follow [DESIGN.md](../../DESIGN.md) for the official visual direction.
+Token values live in
+[`theme.ts`](../../shell/src/ui/styles/theme.ts); token vocabulary
+is in [`tokens.md`](tokens.md). Settings navigation, companion menu rows,
+and switches share [`controls.css`](../../shell/src/ui/styles/controls.css).
+Change that shared implementation instead of styling each window separately.
 
 ## Buttons
 
@@ -29,7 +32,7 @@ in [`tokens.md`](tokens.md).
 | Text | 36 | 12 | `--text-sm` | `--border-width-thin` border, focus ring offset 2px |
 | Textarea | min 96 | 12 | `--text-sm` | Resize vertical only |
 | Select | 36 | 12 / 32 | `--text-sm` | Right-side chevron 16px |
-| Switch | 24×16 | — | — | iOS-style; 200ms ease |
+| Switch | `--size-2xl` × `--size-lg` | — | — | Shared neutral track; `--size-xs` thumb; no animation |
 | Checkbox | 16×16 | — | — | 2px stroke |
 
 ## Form rows
@@ -43,20 +46,20 @@ in [`tokens.md`](tokens.md).
 ## Sidebar (Settings)
 
 - Width: `--sidebar-width` (200px), fixed.
-- Padding: 8px vertical, 4px horizontal.
-- Nav item: 36px tall, 8px vertical padding, 12px horizontal.
-  Weight 400 → 500 on active. **Active state: a 1px-rounded surface
-  step** (not a left bar — left bar reads more dev-tool than
-  humanist).
+- Padding: `--space-5` vertical, `--space-3` horizontal.
+- Nav and companion menu items: minimum height `--size-2xl`,
+  `--space-3` padding, `--radius-input` corners, `--text-sm` labels,
+  and `--leading-lg` line height. Active items use `--surface-control`,
+  `--text-strong`, and `--weight-md`; hover and keyboard focus use the same
+  neutral surface. Companion language selections keep their checkmarks.
 - Group label (e.g. "Desktop app"): 12px, 500, letter-spacing
   0.02em, uppercase, color = `--text-muted`. One per group, not on
   every item.
 
 ## Cards
 
-- Padding: `--space-4` vertical × `--space-5` horizontal (16 × 20).
-  One step tighter when nested inside a card (which should be rare —
-  see card nesting rules in [`aesthetic.md`](aesthetic.md)).
+- Padding: `--space-4` vertical × `--space-5` horizontal.
+  Do not nest cards; see [`aesthetic.md`](aesthetic.md).
 - Gap between cards in a stack: `--space-4` (16).
 - Internal row gap: `--space-3` (12, compact rows) or `--space-4`
   (16, form rows with their own labels).
@@ -71,6 +74,8 @@ in [`tokens.md`](tokens.md).
   `:focus-visible`. Using `:focus` alone is a bug. See
   [`failure-modes.md`](failure-modes.md).
 - Width: `--focus-ring-width` (2px). Offset: `--focus-ring-offset` (2px).
+- Scrollable menu and navigation rows use an inset offset of
+  `calc(-1 * var(--focus-ring-width))` so the ring is not clipped.
 - Color: `--focus-ring-color` → `--accent`, with contrast fallback
   to `--text-strong` when accent on the current surface drops below
   3:1.

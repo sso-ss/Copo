@@ -1,13 +1,19 @@
 import { beforeEach, describe, expect, test } from "bun:test"
 import { Hono } from "hono"
 
+import type { ClientRequestEvent } from "~/lib/http/client-activity-types"
+
 import { createAuthMiddleware } from "~/lib/auth/request-auth"
 import { writeConfig } from "~/lib/config/config"
+import { settingsEventBus } from "~/lib/config/settings-events"
 import {
   __resetClientActivityForTests,
   beginClientRequest,
+  getClientActivitySnapshot,
   listClientActivity,
+  resetClientActivity,
 } from "~/lib/http/client-activity"
+import { UNATTRIBUTED_CLIENT_ID } from "~/lib/http/client-activity-types"
 import {
   isInferenceRequest,
   trackClientRequest,
@@ -48,6 +54,156 @@ function streamingApp() {
 function status() {
   return listClientActivity()[0]
 }
+
+describe("ordered request events", () => {
+  test("retains a concurrent failure even when the last request succeeds", () => {
+    const failed = beginClientRequest("test-key")
+    const succeeded = beginClientRequest("test-key")
+    failed("stopped", 502)
+    succeeded("finished", 200)
+    const snapshot = getClientActivitySnapshot()
+    expect(snapshot.activity[0].status).toBe("finished")
+    expect(snapshot.activeRequests).toEqual([])
+    expect(snapshot.recentEvents.map((event) => event.status)).toEqual([
+      "stopped",
+      "finished",
+    ])
+    expect(snapshot.recentEvents.map((event) => event.eventId)).toEqual([3, 4])
+    expect(snapshot.recentEvents[0].activity.activeRequests).toBe(1)
+    expect(snapshot.recentEvents[1].activity.activeRequests).toBe(0)
+  })
+
+  test("publishes ordered starts and outcomes once, including fast requests", () => {
+    const events: Array<ClientRequestEvent> = []
+    const stop = settingsEventBus.subscribe("activity.request", (event) => {
+      events.push(event)
+    })
+    try {
+      const end = beginClientRequest("test-key")
+      expect(getClientActivitySnapshot().activeRequests).toHaveLength(1)
+      end("finished", 200)
+      end("stopped", 500)
+      expect(events.map((event) => event.status)).toEqual([
+        "started",
+        "finished",
+      ])
+      expect(events.map((event) => event.eventId)).toEqual([1, 2])
+      expect(events[0].requestId).toBe(events[1].requestId)
+      expect(events[0].generation).toBe(events[1].generation)
+      expect(events[0].activity.activeRequests).toBe(1)
+      expect(events[1].activity.activeRequests).toBe(0)
+    } finally {
+      stop()
+    }
+  })
+
+  test("a session reset rejects late outcomes and replaces active counters", () => {
+    const oldEnd = beginClientRequest("test-key")
+    const previous = getClientActivitySnapshot()
+    resetClientActivity()
+    const end = beginClientRequest("test-key")
+    oldEnd("finished", 200)
+    const current = getClientActivitySnapshot()
+    expect(current.generation).not.toBe(previous.generation)
+    expect(current.eventId).toBe(1)
+    expect(current.activity[0].activeRequests).toBe(1)
+    expect(current.recentEvents).toEqual([])
+    end("stopped", null)
+    expect(getClientActivitySnapshot().recentEvents).toHaveLength(1)
+  })
+
+  test("snapshot and published objects cannot mutate retained history", () => {
+    const stop = settingsEventBus.subscribe("activity.request", (event) => {
+      event.activity.activeRequests = 99
+    })
+    try {
+      const end = beginClientRequest("test-key")
+      const active = getClientActivitySnapshot()
+      active.activity[0].activeRequests = 100
+      active.activeRequests[0].activity.activeRequests = 100
+      expect(
+        getClientActivitySnapshot().activeRequests[0].activity.activeRequests,
+      ).toBe(1)
+      end("finished", 200)
+      const finished = getClientActivitySnapshot()
+      finished.recentEvents[0].activity.activeRequests = 100
+      expect(
+        getClientActivitySnapshot().recentEvents[0].activity.activeRequests,
+      ).toBe(0)
+    } finally {
+      stop()
+    }
+  })
+
+  test("terminal history is bounded without evicting running requests", () => {
+    const end = beginClientRequest("long-running")
+    for (let i = 0; i < 300; i++) beginClientRequest("fast")("finished", 200)
+    const snapshot = getClientActivitySnapshot()
+    expect(snapshot.recentEvents).toHaveLength(256)
+    expect(snapshot.recentEvents.at(-1)?.eventId).toBe(snapshot.eventId)
+    expect(snapshot.activeRequests).toHaveLength(1)
+    expect(snapshot.activeRequests[0].apiKeyId).toBe("long-running")
+    end("finished", 200)
+  })
+
+  test("idle summary eviction is reported to incremental consumers", () => {
+    for (let i = 0; i < 1024; i++)
+      beginClientRequest(`key-${i}`)("finished", 200)
+    const end = beginClientRequest("new-key")
+    const snapshot = getClientActivitySnapshot()
+    expect(snapshot.activity).toHaveLength(1024)
+    expect(snapshot.activeRequests[0].removedApiKeyId).toBe("key-0")
+    end("finished", 200)
+  })
+})
+
+test("accepted legacy and unnamed requests drive gateway activity without inventing tool attribution", async () => {
+  for (const key of ["", "legacy-key"]) {
+    __resetClientActivityForTests()
+    writeConfig({
+      auth: { enforce: Boolean(key), apiKeys: key ? [key] : [] },
+    })
+    try {
+      let finish: () => void = () => {
+        throw new Error("stream not started")
+      }
+      const app = new Hono()
+      app.use(createAuthMiddleware())
+      app.post(
+        "/v1/responses",
+        () =>
+          new Response(
+            new ReadableStream<Uint8Array>({
+              start(controller) {
+                finish = () => {
+                  controller.enqueue(
+                    new TextEncoder().encode("data: [DONE]\n\n"),
+                  )
+                  controller.close()
+                }
+              },
+            }),
+            { headers: { "content-type": "text/event-stream" } },
+          ),
+      )
+      const response = await app.request("/v1/responses", {
+        method: "POST",
+        headers: key ? { Authorization: `Bearer ${key}` } : {},
+      })
+      expect(getClientActivitySnapshot().activeRequests).toHaveLength(1)
+      expect(status().apiKeyId).toBe(UNATTRIBUTED_CLIENT_ID)
+      finish()
+      await response.text()
+      expect(status().activeRequests).toBe(0)
+      expect(status().status).toBe("finished")
+      expect(JSON.stringify(getClientActivitySnapshot())).not.toContain(
+        "legacy-key",
+      )
+    } finally {
+      writeConfig({})
+    }
+  }
+})
 
 describe("request activity", () => {
   test("concurrent requests stay working until the last ends, with idempotent cleanup", () => {

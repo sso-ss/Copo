@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-companion"
+description = "Read sanitized companion metadata and operate companion windows."
+commands.allow = ["companion_action", "companion_data", "companion_boot", "companion_toggle"]

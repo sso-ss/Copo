@@ -1,5 +1,11 @@
 # Window family: Settings + Dashboard
 
+The Companion and Connections windows are local Bun-bundled Tauri assets.
+They load before the sidecar and import the generated shared CSS tokens.
+Companion is a transparent desktop button; Connections is a compact vertical
+list with secondary account controls. Both reuse existing Settings actions.
+One native event subscription continues when either window is hidden.
+
 The Settings window (`shell/`) and the Dashboard window
 (`shell/ui/dashboard/index.html`) share one design language. This doc
 codifies what's shared, where they diverge, and the architectural
@@ -57,3 +63,11 @@ or test) that diffs the token declarations in `tokens.css` vs
 the dashboard `style.css` and fails on mismatch. See
 [`change-checklists.md`](change-checklists.md) → *Changing a token
 value* for the manual workflow until that exists.
+### Shared personalization
+
+Settings → Personalization owns the desktop buddy size and appearance controls.
+The native preference store broadcasts changes to Settings, Dashboard, and both
+companion windows, including across their different origins. Appearance follows
+the system by default, with explicit Light and Dark choices. Small, Just right,
+and Big buddy preserve the artwork proportions; resizing anchors the feet and
+reclamps the pet to its current display. These preferences persist across launch.

@@ -148,7 +148,7 @@ export async function runServer(options: RunServerOptions): Promise<void> {
   }
 
   // First-launch CLI shim (macOS .dmg only). The .app bundle's CLI
-  // lives at …/ModelRelay.app/Contents/MacOS/maximal, off every default
+  // lives at …/CoPo.app/Contents/MacOS/maximal, off every default
   // PATH; symlink it into ~/.local/bin so `maximal` works in a
   // terminal. Idempotent + best-effort — never blocks boot. No-op for
   // Homebrew/dev launches (not an .app bundle). See lib/cli-path.ts.

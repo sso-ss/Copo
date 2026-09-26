@@ -24,7 +24,7 @@ import { BUILD_CHANNEL, BUILD_VERSION } from "~/lib/update/build-info"
 
 const log = createTeeLogger("update")
 
-/** ModelRelay release manifest. An empty channel list means no release has been published yet. */
+/** CoPo release manifest. An empty channel list means no release has been published yet. */
 const MANIFEST_URL =
   "https://raw.githubusercontent.com/sso-ss/ModelRelay/main/site/public/updates/modelrelay.json"
 
@@ -35,7 +35,7 @@ const MANIFEST_URL =
  *  `stable` keeps reading `stable`. */
 const UPDATE_CHANNEL = BUILD_CHANNEL
 
-/** ModelRelay releases, independent of the upstream Maximal release channel. */
+/** CoPo releases, independent of the upstream Maximal release channel. */
 export const DOWNLOAD_URL = "https://github.com/sso-ss/ModelRelay/releases"
 
 /** Cache the resolved status this long. Generous on purpose: a new release is

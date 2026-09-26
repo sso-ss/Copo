@@ -1,4 +1,4 @@
-// ModelRelay — Dashboard client script (bundled TS entry).
+// CoPo — Dashboard client script (bundled TS entry).
 //
 // Loaded as an ES module with `defer` semantics (Bun bundles this into
 // shell/dist/ui/dashboard/main.js; Tailwind + Lucide stay CLASSIC <script>
@@ -9,6 +9,9 @@
 // catalog and a locale picker is wired into the header.
 import { t } from "../i18n";
 import { applyI18n, wireLocalePicker } from "../i18n/apply";
+import { startPersonalization } from "../ui/personalization";
+
+void startPersonalization();
 
 // Tailwind + Lucide are loaded as classic global <script>s in index.html, so
 // they exist on `window` at runtime; the bundle references them as ambient
@@ -466,11 +469,11 @@ function renderUsageQuotas(
     .join("");
 
   return `
-            <section id="usage-quotas" class="mb-6">
-                <h2 class="text-xl font-bold mb-3 flex items-center gap-2" style="color: var(--color-fg-lightest);">
+            <section id="usage-quotas" class="dashboard-section">
+                <h2 class="dashboard-section-title" style="color: var(--text-strong);">
                     <i data-lucide="bar-chart-big"></i> ${escapeHtml(t("dashboard-quotas-title"))}
                 </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="quota-grid">
                     ${quotaCards}
                 </div>
             </section>
@@ -488,19 +491,19 @@ function renderQuotaCard(title: string, details: QuotaDetails): string {
     ? t("dashboard-not-available")
     : (entitlement - remaining).toLocaleString();
 
-  let progressBarColor = "var(--color-green)";
-  if (percentUsed > 75) progressBarColor = "var(--color-yellow)";
-  if (percentUsed > 90) progressBarColor = "var(--color-red)";
-  if (unlimited) progressBarColor = "var(--color-blue)";
+  let progressBarColor = "var(--accent)";
+  if (percentUsed > 75) progressBarColor = "var(--status-warning)";
+  if (percentUsed > 90) progressBarColor = "var(--status-error)";
+  if (unlimited) progressBarColor = "var(--accent)";
 
   return `
-            <div class="p-4 border" style="background-color: var(--color-bg); border-color: var(--color-bg-light-2);">
+            <div class="quota-card panel">
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-md font-semibold capitalize" style="color: var(--color-fg-lightest);">${escapeHtml(title.replace(/_/g, " "))}</h3>
+                    <h3 class="quota-title">${escapeHtml(title.replace(/_/g, " "))}</h3>
                     ${
                       unlimited
-                        ? `<span class="px-2 py-0.5 text-xs font-medium" style="color: var(--color-blue-accent); background-color: var(--color-bg-light-1);">${escapeHtml(t("dashboard-quota-unlimited"))}</span>`
-                        : `<span class="text-sm font-mono" style="color: var(--color-fg-medium);">${escapeHtml(t("dashboard-quota-percent-used", { percent: percentUsed.toFixed(1) }))}</span>`
+                        ? `<span class="quota-badge">${escapeHtml(t("dashboard-quota-unlimited"))}</span>`
+                        : `<span class="text-sm font-mono" style="color: var(--text-base-color);">${escapeHtml(t("dashboard-quota-percent-used", { percent: percentUsed.toFixed(1) }))}</span>`
                     }
                 </div>
                 <div class="mb-3">
@@ -508,7 +511,7 @@ function renderQuotaCard(title: string, details: QuotaDetails): string {
                          <div class="progress-bar-fg h-2" style="width: ${unlimited ? 100 : percentUsed}%; background-color: ${progressBarColor};"></div>
                      </div>
                 </div>
-                <div class="flex justify-between text-xs font-mono" style="color: var(--color-fg-dark);">
+                <div class="flex justify-between text-sm font-mono" style="color: var(--text-muted);">
                     <span>${used} / ${unlimited ? "∞" : entitlement.toLocaleString()}</span>
                     <span>${escapeHtml(t("dashboard-quota-remaining", { n: unlimited ? "∞" : remaining.toLocaleString() }))}</span>
                 </div>
@@ -521,7 +524,7 @@ function renderQuotaCard(title: string, details: QuotaDetails): string {
  */
 function formatObject(obj: unknown): string {
   if (obj === null || typeof obj !== "object") {
-    return `<span style="color: var(--color-green-accent);">${escapeHtml(JSON.stringify(obj))}</span>`;
+    return `<span style="color: var(--text-strong);">${escapeHtml(JSON.stringify(obj))}</span>`;
   }
 
   return (
@@ -534,18 +537,18 @@ function formatObject(obj: unknown): string {
         if (Array.isArray(value)) {
           displayValue =
             value.length > 0
-              ? `<span style='color: var(--color-gray-accent)'>[...${value.length} items]</span>`
-              : `<span style='color: var(--color-gray-accent)'>[]</span>`;
+              ? `<span style='color: var(--text-muted)'>[...${value.length} items]</span>`
+              : `<span style='color: var(--text-muted)'>[]</span>`;
         } else if (typeof value === "object" && value !== null) {
           displayValue = formatObject(value);
         } else if (typeof value === "boolean") {
-          displayValue = `<span class="font-semibold" style="color: ${value ? "var(--color-green-accent)" : "var(--color-red-accent)"}">${escapeHtml(String(value))}</span>`;
+          displayValue = `<span class="font-semibold" style="color: var(--text-strong)">${escapeHtml(String(value))}</span>`;
         } else {
-          displayValue = `<span style="color: var(--color-blue-accent);">${escapeHtml(JSON.stringify(value))}</span>`;
+          displayValue = `<span style="color: var(--text-strong);">${escapeHtml(JSON.stringify(value))}</span>`;
         }
 
         return `<div class="mt-1">
-                        <span class="capitalize font-semibold" style="color: var(--color-fg-medium);">${formattedKey}:</span>
+                        <span class="capitalize font-semibold" style="color: var(--text-base-color);">${formattedKey}:</span>
                         ${typeof value === "object" && value !== null && !Array.isArray(value) ? displayValue : ` ${displayValue}`}
                    </div>`;
       })
@@ -561,10 +564,10 @@ function renderDetailedData(data: UsageData): string {
   const formattedDetails = formatObject(data);
   return `
             <section id="detailed-data">
-                <h2 class="text-xl font-bold mb-3 flex items-center gap-2" style="color: var(--color-fg-lightest);">
+                <h2 class="dashboard-section-title" style="color: var(--text-strong);">
                    <i data-lucide="file-text"></i> ${escapeHtml(t("dashboard-api-response-title"))}
                 </h2>
-                <div class="border p-4 relative font-mono text-xs code-block overflow-auto" style="background-color: var(--color-bg-darkest); border-color: var(--color-bg-light-2);">
+                <div class="code-block font-mono">
                     ${formattedDetails}
                 </div>
             </section>
@@ -599,17 +602,17 @@ function renderTokenUsageSection(): string {
     : t("dashboard-events-none");
 
   return `
-    <section id="token-usage" class="mb-6">
+    <section id="token-usage" class="dashboard-section">
       <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 class="text-xl font-bold flex items-center gap-2" style="color: var(--color-fg-lightest);">
+          <h2 class="dashboard-section-title" style="color: var(--text-strong);">
             <i data-lucide="database"></i> ${escapeHtml(t("dashboard-token-usage-title"))}
           </h2>
-          <p class="mt-1 text-xs" style="color: var(--color-gray);">${escapeHtml(
+          <p class="mt-1 text-sm" style="color: var(--text-muted);">${escapeHtml(
             renderTokenUsageRangeText(state.tokenUsagePeriod, activeRange),
           )}</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2 text-xs" style="color: var(--color-gray-accent);">
+        <div class="flex flex-wrap items-center gap-2 text-sm" style="color: var(--text-muted);">
           ${
             state.isTokenUsageLoading
               ? `<span>${escapeHtml(t("dashboard-refreshing-summary"))}</span>`
@@ -632,23 +635,21 @@ function renderTokenUsageSection(): string {
           : ""
       }
 
-      <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3 ${
-        state.isTokenUsageLoading ? "opacity-60" : ""
-      }">
-        ${renderTokenUsageMetric(t("dashboard-col-total"), totals.total_tokens, "var(--color-fg-lightest)")}
-        ${renderTokenUsageMetric(t("dashboard-col-input"), totals.input_tokens, "var(--color-blue-accent)")}
-        ${renderTokenUsageMetric(t("dashboard-col-output"), totals.output_tokens, "var(--color-green-accent)")}
-        ${renderTokenUsageMetric(t("dashboard-col-cache-read"), totals.cache_read_input_tokens, "var(--color-aqua-accent)")}
-        ${renderTokenUsageMetric(t("dashboard-col-cache-write"), totals.cache_creation_input_tokens, "var(--color-yellow-accent)")}
-        ${renderTokenUsageMetric(t("dashboard-col-requests"), totals.request_count, "var(--color-purple-accent)")}
-        ${renderTokenUsageCostMetric(t("dashboard-col-cost"), totals.total_nano_aiu, "var(--color-green)")}
-      </div>
+      <dl class="usage-metrics ${state.isTokenUsageLoading ? "opacity-60" : ""}">
+        ${renderTokenUsageMetric(t("dashboard-col-total"), formatNumber(totals.total_tokens))}
+        ${renderTokenUsageMetric(t("dashboard-col-input"), formatNumber(totals.input_tokens))}
+        ${renderTokenUsageMetric(t("dashboard-col-output"), formatNumber(totals.output_tokens))}
+        ${renderTokenUsageMetric(t("dashboard-col-cache-read"), formatNumber(totals.cache_read_input_tokens))}
+        ${renderTokenUsageMetric(t("dashboard-col-cache-write"), formatNumber(totals.cache_creation_input_tokens))}
+        ${renderTokenUsageMetric(t("dashboard-col-requests"), formatNumber(totals.request_count))}
+        ${renderTokenUsageMetric(t("dashboard-col-cost"), formatCostAiu(totals.total_nano_aiu))}
+      </dl>
 
-      <div class="mt-4 border" style="background-color: var(--color-bg); border-color: var(--color-bg-light-2);">
-        <div class="px-4 py-3 border-b flex items-center justify-between gap-3" style="background-color: var(--color-bg-soft); border-color: var(--color-bg-light-2);">
+      <div class="data-panel panel">
+        <div class="data-panel__head">
           <div>
-            <p class="text-sm font-semibold" style="color: var(--color-fg-lightest);">${escapeHtml(t("dashboard-by-model-title"))}</p>
-            <p class="mt-1 text-xs" style="color: var(--color-gray-accent);">${
+            <p class="text-sm font-semibold" style="color: var(--text-strong);">${escapeHtml(t("dashboard-by-model-title"))}</p>
+            <p class="mt-1 text-sm" style="color: var(--text-muted);">${
               summary
                 ? escapeHtml(t("dashboard-by-model-count", { n: summary.byModel.length }))
                 : escapeHtml(t("dashboard-by-model-none"))
@@ -658,11 +659,11 @@ function renderTokenUsageSection(): string {
         ${renderTokenUsageModelBreakdown(summary)}
       </div>
 
-      <div class="mt-4 border" style="background-color: var(--color-bg); border-color: var(--color-bg-light-2);">
-        <div class="px-4 py-3 border-b flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" style="background-color: var(--color-bg-soft); border-color: var(--color-bg-light-2);">
+      <div class="data-panel panel">
+        <div class="data-panel__head">
           <div>
-            <p class="text-sm font-semibold" style="color: var(--color-fg-lightest);">${escapeHtml(t("dashboard-event-details-title"))}</p>
-            <p class="mt-1 text-xs" style="color: var(--color-gray-accent);">${escapeHtml(eventsMeta)}</p>
+            <p class="text-sm font-semibold" style="color: var(--text-strong);">${escapeHtml(t("dashboard-event-details-title"))}</p>
+            <p class="mt-1 text-sm" style="color: var(--text-muted);">${escapeHtml(eventsMeta)}</p>
           </div>
           <div class="flex items-center gap-2">
             ${renderPaginationButton("previous", t("dashboard-pager-previous"), !eventsPage || state.isEventsLoading || eventsPage.page <= 1)}
@@ -680,31 +681,12 @@ function renderTokenUsageSection(): string {
   `;
 }
 
-function renderTokenUsageMetric(
-  label: string,
-  value: number,
-  accentColor: string,
-): string {
+// Both token counts and AIU costs use the same neutral summary treatment.
+function renderTokenUsageMetric(label: string, formattedValue: string): string {
   return `
-    <div class="p-4 border" style="background-color: var(--color-bg); border-color: var(--color-bg-light-2);">
-      <div class="text-lg font-bold" style="color: ${accentColor};">${formatNumber(value)}</div>
-      <div class="mt-1 text-xs uppercase tracking-wide" style="color: var(--color-gray-accent);">${escapeHtml(label)}</div>
-    </div>
-  `;
-}
-
-// A cost metric renders the human AIU unit (from nano-AIU) instead of a raw
-// integer, so it needs its own formatter. Same card chrome as the token
-// metrics above so the grid stays visually uniform.
-function renderTokenUsageCostMetric(
-  label: string,
-  nanoAiu: number,
-  accentColor: string,
-): string {
-  return `
-    <div class="p-4 border" style="background-color: var(--color-bg); border-color: var(--color-bg-light-2);">
-      <div class="text-lg font-bold" style="color: ${accentColor};">${escapeHtml(formatCostAiu(nanoAiu))}</div>
-      <div class="mt-1 text-xs uppercase tracking-wide" style="color: var(--color-gray-accent);">${escapeHtml(label)}</div>
+    <div class="usage-metric">
+      <dt class="usage-metric__label">${escapeHtml(label)}</dt>
+      <dd class="usage-metric__value">${escapeHtml(formattedValue)}</dd>
     </div>
   `;
 }
@@ -719,33 +701,33 @@ function renderTokenUsageModelBreakdown(
   const rows = summary.byModel
     .map((model) => {
       return `
-        <tr class="border-b last:border-b-0" style="border-color: var(--color-bg-light-1);">
-          <td class="px-4 py-2 max-w-[280px] truncate" style="color: var(--color-fg-lightest);" title="${escapeHtml(model.model)}">${escapeHtml(model.model)}</td>
-          <td class="px-4 py-2 text-right" style="color: var(--color-fg-dark);">${formatNumber(model.request_count)}</td>
-          <td class="px-4 py-2 text-right" style="color: var(--color-fg-dark);">${formatNumber(model.input_tokens)}</td>
-          <td class="px-4 py-2 text-right" style="color: var(--color-fg-dark);">${formatNumber(model.output_tokens)}</td>
-          <td class="px-4 py-2 text-right" style="color: var(--color-fg-dark);">${formatNumber(model.cache_read_input_tokens)}</td>
-          <td class="px-4 py-2 text-right" style="color: var(--color-fg-dark);">${formatNumber(model.cache_creation_input_tokens)}</td>
-          <td class="px-4 py-2 text-right font-semibold" style="color: var(--color-yellow-accent);">${formatNumber(model.total_tokens)}</td>
-          <td class="px-4 py-2 text-right font-semibold" style="color: var(--color-green);">${escapeHtml(formatCostAiu(model.total_nano_aiu))}</td>
+        <tr class="data-row">
+          <td class="px-4 py-2 max-w-[280px] truncate" style="color: var(--text-strong);" title="${escapeHtml(model.model)}">${escapeHtml(model.model)}</td>
+          <td class="px-4 py-2 text-right" style="color: var(--text-muted);">${formatNumber(model.request_count)}</td>
+          <td class="px-4 py-2 text-right" style="color: var(--text-muted);">${formatNumber(model.input_tokens)}</td>
+          <td class="px-4 py-2 text-right" style="color: var(--text-muted);">${formatNumber(model.output_tokens)}</td>
+          <td class="px-4 py-2 text-right" style="color: var(--text-muted);">${formatNumber(model.cache_read_input_tokens)}</td>
+          <td class="px-4 py-2 text-right" style="color: var(--text-muted);">${formatNumber(model.cache_creation_input_tokens)}</td>
+          <td class="px-4 py-2 text-right font-semibold" style="color: var(--text-strong);">${formatNumber(model.total_tokens)}</td>
+          <td class="px-4 py-2 text-right font-semibold" style="color: var(--text-strong);">${escapeHtml(formatCostAiu(model.total_nano_aiu))}</td>
         </tr>
       `;
     })
     .join("");
 
   return `
-    <div class="overflow-auto ${state.isTokenUsageLoading ? "opacity-60" : ""}">
-      <table class="w-full min-w-[860px] text-left text-xs sm:text-sm">
-        <thead style="background-color: var(--color-bg-light-1); color: var(--color-fg-medium);">
+    <div class="table-scroll ${state.isTokenUsageLoading ? "opacity-60" : ""}" tabindex="0" role="region" aria-label="${escapeHtml(t("dashboard-by-model-title"))}">
+      <table class="data-table min-w-[860px]">
+        <thead>
           <tr>
-            <th class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-model"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-requests"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-input"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-output"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-cache-read"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-cache-write"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-total"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-cost"))}</th>
+            <th scope="col" class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-model"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-requests"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-input"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-output"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-cache-read"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-cache-write"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-total"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-cost"))}</th>
           </tr>
         </thead>
         <tbody>
@@ -770,39 +752,39 @@ function renderTokenUsageEventsTable(
       const traceId = formatCellText(event.trace_id);
 
       return `
-        <tr class="border-b last:border-b-0" style="border-color: var(--color-bg-light-1);">
-          <td class="px-4 py-2 whitespace-nowrap" style="color: var(--color-fg-dark);" title="${escapeHtml(event.created_at_utc)}">${escapeHtml(formatDateTime(event.created_at_ms))}</td>
-          <td class="px-4 py-2 max-w-[160px] truncate" style="color: var(--color-fg-lightest);" title="${escapeHtml(userId)}">${escapeHtml(userId)}</td>
-          <td class="px-4 py-2 whitespace-nowrap" style="color: var(--color-fg-dark);">${escapeHtml(event.endpoint.replace(/_/g, " "))}</td>
-          <td class="px-4 py-2 max-w-[220px] truncate" style="color: var(--color-fg-lightest);" title="${escapeHtml(event.model)}">${escapeHtml(event.model)}</td>
-          <td class="px-4 py-2 max-w-[180px] truncate font-mono" style="color: var(--color-fg-dark);" title="${escapeHtml(sessionId)}">${escapeHtml(sessionId)}</td>
-          <td class="px-4 py-2 max-w-[200px] truncate font-mono" style="color: var(--color-fg-dark);" title="${escapeHtml(traceId)}">${escapeHtml(traceId)}</td>
-          <td class="px-4 py-2 text-right" style="color: var(--color-fg-dark);">${formatNumber(event.input_tokens)}</td>
-          <td class="px-4 py-2 text-right" style="color: var(--color-fg-dark);">${formatNumber(event.output_tokens)}</td>
-          <td class="px-4 py-2 text-right" style="color: var(--color-fg-dark);">${formatNumber(event.cache_read_input_tokens)}</td>
-          <td class="px-4 py-2 text-right" style="color: var(--color-fg-dark);">${formatNumber(event.cache_creation_input_tokens)}</td>
-          <td class="px-4 py-2 text-right font-semibold" style="color: var(--color-yellow-accent);">${formatNumber(event.total_tokens)}</td>
+        <tr class="data-row">
+          <td class="px-4 py-2 whitespace-nowrap" style="color: var(--text-muted);" title="${escapeHtml(event.created_at_utc)}">${escapeHtml(formatDateTime(event.created_at_ms))}</td>
+          <td class="px-4 py-2 max-w-[160px] truncate" style="color: var(--text-strong);" title="${escapeHtml(userId)}">${escapeHtml(userId)}</td>
+          <td class="px-4 py-2 whitespace-nowrap" style="color: var(--text-muted);">${escapeHtml(event.endpoint.replace(/_/g, " "))}</td>
+          <td class="px-4 py-2 max-w-[220px] truncate" style="color: var(--text-strong);" title="${escapeHtml(event.model)}">${escapeHtml(event.model)}</td>
+          <td class="px-4 py-2 max-w-[180px] truncate font-mono" style="color: var(--text-muted);" title="${escapeHtml(sessionId)}">${escapeHtml(sessionId)}</td>
+          <td class="px-4 py-2 max-w-[200px] truncate font-mono" style="color: var(--text-muted);" title="${escapeHtml(traceId)}">${escapeHtml(traceId)}</td>
+          <td class="px-4 py-2 text-right" style="color: var(--text-muted);">${formatNumber(event.input_tokens)}</td>
+          <td class="px-4 py-2 text-right" style="color: var(--text-muted);">${formatNumber(event.output_tokens)}</td>
+          <td class="px-4 py-2 text-right" style="color: var(--text-muted);">${formatNumber(event.cache_read_input_tokens)}</td>
+          <td class="px-4 py-2 text-right" style="color: var(--text-muted);">${formatNumber(event.cache_creation_input_tokens)}</td>
+          <td class="px-4 py-2 text-right font-semibold" style="color: var(--text-strong);">${formatNumber(event.total_tokens)}</td>
         </tr>
       `;
     })
     .join("");
 
   return `
-    <div class="overflow-auto ${state.isEventsLoading ? "opacity-60" : ""}">
-      <table class="w-full min-w-[1180px] text-left text-xs sm:text-sm">
-        <thead style="background-color: var(--color-bg-light-1); color: var(--color-fg-medium);">
+    <div class="table-scroll ${state.isEventsLoading ? "opacity-60" : ""}" tabindex="0" role="region" aria-label="${escapeHtml(t("dashboard-event-details-title"))}">
+      <table class="data-table min-w-[1180px]">
+        <thead>
           <tr>
-            <th class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-time"))}</th>
-            <th class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-user"))}</th>
-            <th class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-endpoint"))}</th>
-            <th class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-model"))}</th>
-            <th class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-session"))}</th>
-            <th class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-trace"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-input"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-output"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-cache-read"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-cache-write"))}</th>
-            <th class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-total"))}</th>
+            <th scope="col" class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-time"))}</th>
+            <th scope="col" class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-user"))}</th>
+            <th scope="col" class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-endpoint"))}</th>
+            <th scope="col" class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-model"))}</th>
+            <th scope="col" class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-session"))}</th>
+            <th scope="col" class="px-4 py-2 font-semibold">${escapeHtml(t("dashboard-col-trace"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-input"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-output"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-cache-read"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-cache-write"))}</th>
+            <th scope="col" class="px-4 py-2 text-right font-semibold">${escapeHtml(t("dashboard-col-total"))}</th>
           </tr>
         </thead>
         <tbody>
@@ -822,8 +804,7 @@ function renderPaginationButton(
     <button
       type="button"
       data-page-action="${action}"
-      class="px-3 py-1.5 border text-xs font-medium"
-      style="background-color: var(--color-bg-darkest); border-color: var(--color-bg-light-2); color: var(--color-fg-light);"
+      class="dashboard-button"
       ${disabled ? "disabled" : ""}
     >
       ${escapeHtml(label)}
@@ -833,7 +814,7 @@ function renderPaginationButton(
 
 function renderEmptyState(message: string): string {
   return `
-    <div class="px-4 py-6 text-sm" style="color: var(--color-gray);">
+    <div class="px-4 py-6 text-sm" style="color: var(--text-muted);">
       ${escapeHtml(message)}
     </div>
   `;
@@ -845,7 +826,7 @@ function renderEmptyState(message: string): string {
 function renderSpinner(): string {
   return `
     <div class="flex justify-center items-center py-20">
-        <div class="animate-spin h-12 w-12 rounded-full border-4 border-transparent border-t-4" style="border-top-color: var(--color-blue);"></div>
+        <div class="animate-spin h-12 w-12 rounded-full border-4 border-transparent border-t-4" style="border-top-color: var(--accent);"></div>
     </div>`;
 }
 
@@ -858,15 +839,14 @@ function renderError(
 ): string {
   return `
     <div
-      class="p-3 border"
-      style="background-color: rgba(204, 36, 29, 0.2); border-color: var(--color-red); color: var(--color-red-accent);"
+      class="dashboard-error"
       role="alert"
     >
       <div class="flex items-start">
         <i data-lucide="alert-triangle" class="h-5 w-5 mr-3 mt-0.5"></i>
         <div>
           <p class="font-bold text-sm">${escapeHtml(title)}</p>
-          <p class="text-xs">${escapeHtml(message)}</p>
+          <p class="text-sm">${escapeHtml(message)}</p>
         </div>
       </div>
     </div>
@@ -878,10 +858,10 @@ function renderError(
  */
 function renderWelcomeMessage(): string {
   return `
-    <div class="text-center py-16 px-4 border" style="background-color: var(--color-bg-soft); border-color: var(--color-bg-light-2);">
-        <i data-lucide="info" class="mx-auto h-10 w-10" style="color: var(--color-gray-accent);"></i>
-        <h3 class="mt-2 text-lg font-semibold" style="color: var(--color-fg-lightest);">${escapeHtml(t("dashboard-welcome-title"))}</h3>
-        <p class="mt-1 text-sm" style="color: var(--color-gray);">${escapeHtml(t("dashboard-welcome-body"))}</p>
+    <div class="dashboard-empty">
+        <i data-lucide="info" class="mx-auto h-10 w-10" style="color: var(--text-muted);"></i>
+        <h3 class="mt-2 text-lg font-semibold" style="color: var(--text-strong);">${escapeHtml(t("dashboard-welcome-title"))}</h3>
+        <p class="mt-1 text-sm" style="color: var(--text-muted);">${escapeHtml(t("dashboard-welcome-body"))}</p>
     </div>
   `;
 }

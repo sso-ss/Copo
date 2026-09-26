@@ -1,6 +1,7 @@
-See [CLAUDE.md](./CLAUDE.md).
+Read [CLAUDE.md](./CLAUDE.md) for project instructions.
 
-This pointer exists so non-Claude tools (Cursor, opencode, Aider, etc.)
-that follow the [agents.md](https://agents.md) convention pick up the
-same project context Claude Code uses via `CLAUDE.md`. One source of
-truth; no drift.
+For every CoPo interface change, read and follow [DESIGN.md](./DESIGN.md).
+It is the official design standard: warm neutrals, rounded corners, and the
+Companion-inspired style approved by the user. It supersedes conflicting
+historical design notes; later explicit user instructions take precedence.
+Use [.design-context.md](./.design-context.md) to find supporting topic guides.

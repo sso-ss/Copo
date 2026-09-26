@@ -25,6 +25,8 @@ import { detectCodex } from "./detect"
 import { codexProvider, verifyCodexProvider } from "./provider"
 
 const routingLock = new Set<string>()
+const EXISTING_SETUP_NOTICE =
+  "Your existing Codex setup already routes through CoPo. Configure uses separate managed settings; Disconnect restores your existing setup."
 
 async function mutateRouting<Result>(
   operation: () => Promise<Result>,
@@ -92,8 +94,7 @@ function createCodexApp(
         enabled = isCodexEnabled(text)
         model = configuredModel(text)
         if (hasUnmanagedProvider(text)) {
-          notice =
-            "Your existing Codex setup already routes through ModelRelay. This switch uses separate managed settings; switching it off restores your existing setup."
+          notice = EXISTING_SETUP_NOTICE
         }
       } catch (error) {
         notice =
@@ -115,6 +116,7 @@ function createCodexApp(
           available_models: availableModels(),
           managed,
           notice,
+          uses_existing_setup: notice === EXISTING_SETUP_NOTICE,
         },
       }
     },
@@ -134,7 +136,7 @@ function createCodexApp(
         const models = availableModels()
         if (models.length > 0 && !models.includes(model)) {
           throw new Error(
-            "Your configured Codex model is not available through ModelRelay's Responses API. Set a supported model in your Codex configuration, then try again.",
+            "Your configured Codex model is not available through CoPo's Responses API. Set a supported model in your Codex configuration, then try again.",
           )
         }
         const after = prepareCodexConfig(

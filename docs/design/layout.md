@@ -15,6 +15,8 @@ and any setup window builder in sync.
 | Setup      | 520×620 | 480×560  | 720×800  | yes       | Single column, vertical scroll on overflow |
 | Dashboard  | 960×720 | 720×560  | 1400×1000| yes       | One scrollable column with sectioned content |
 | Settings   | 880×720 | 720×560  | 1200×900 | yes       | Sidebar + content pane |
+| Companion | 160×194 | fixed | fixed | no | Transparent, stable hit area; saved desktop position |
+| Connections | 380×510 | 340×350 | screen bounds | yes | Beside the companion; vertical list and local recovery |
 
 Single-instance for all three (re-show + focus the existing window).
 Position: center on first launch, then respect last position.
@@ -25,8 +27,9 @@ Position: center on first launch, then respect last position.
 size; no mobile fallback.
 
 - **Setup**: single column, content max ~440px, centered.
-- **Dashboard**: single column, content max ~720px, left-aligned,
-  cards full content width.
+- **Dashboard**: one centered column using `--content-max-wide`. Neutral
+  summary metrics wrap within the column; each detailed table scrolls inside
+  its own rounded surface rather than widening the window.
 - **Settings**: `--sidebar-width` left rail + content pane.
   Content pane max-width = `--content-max`. Within the pane, form
   rows use a 33% label / 66% control split.
@@ -81,6 +84,7 @@ warns when text-on-card drops below WCAG AA. See
 |---|---|
 | `--radius-input` | Inputs, buttons |
 | `--radius-card` | Cards, code blocks |
+| `--radius-panel` | Companion panel and personalization preview |
 | `--radius-chip` | Chips, count badges |
 | `--radius-pill` | Status dots, round/pill badges (text-light only) |
 

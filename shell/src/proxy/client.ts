@@ -1,4 +1,4 @@
-import type { ClientActivity } from "../../../src/lib/http/client-activity";
+import type { ClientActivity } from "../../../src/lib/http/client-activity-types";
 import { getShellApiKey } from "../tauri/shell";
 
 /**
@@ -139,6 +139,7 @@ export interface AppEntry {
     available_models: Array<string>
     managed: boolean
     notice?: string
+    uses_existing_setup?: boolean
   }
 }
 
@@ -435,7 +436,8 @@ export interface EventSubscription {
  * and resynced by the next event or the GET fallback.
  */
 export async function subscribeAuthEvents(handlers: {
-  onAuth: (status: AuthStatus) => void
+  onAuth?: (status: AuthStatus) => void
+  onConnections?: () => void
   onOpen?: () => void
   onError?: () => void
 }): Promise<EventSubscription> {
@@ -445,10 +447,11 @@ export async function subscribeAuthEvents(handlers: {
 
   source.addEventListener("open", () => handlers.onOpen?.())
   source.addEventListener("error", () => handlers.onError?.())
+  source.addEventListener("connections.changed", () => handlers.onConnections?.())
   source.addEventListener("auth.changed", (event) => {
     const message = event as MessageEvent<string>
     try {
-      handlers.onAuth(JSON.parse(message.data) as AuthStatus)
+      handlers.onAuth?.(JSON.parse(message.data) as AuthStatus)
     } catch {
       // Malformed frame — drop it; the next event (or a GET fallback)
       // resyncs. An event listener must never throw.

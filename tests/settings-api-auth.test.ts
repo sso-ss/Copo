@@ -47,6 +47,8 @@ const {
 const { createAuthMiddleware } = await import("~/lib/auth/request-auth")
 const { settingsApiRoutes } = await import("~/routes/settings/api")
 const { state } = await import("~/lib/runtime-state/state")
+const { beginClientRequest, getClientActivitySnapshot } =
+  await import("~/lib/http/client-activity")
 
 function buildApp(opts?: { apiKeys?: Array<string> }) {
   const app = new Hono()
@@ -207,8 +209,12 @@ describe("/settings/api/auth/github — cancel keeps you signed in", () => {
     const app = buildApp()
     markSignedIn("alice")
     state.githubToken = "ghu_alice"
+    const finish = beginClientRequest("alice-tool")
+    const generation = getClientActivitySnapshot().generation
 
     await app.request("/settings/api/auth/github/start", { method: "POST" })
+    expect(getClientActivitySnapshot().generation).toBe(generation)
+    expect(getClientActivitySnapshot().activeRequests).toHaveLength(1)
     const cancelBody = await (
       await app.request("/settings/api/auth/github/cancel", { method: "POST" })
     ).json()
@@ -223,6 +229,9 @@ describe("/settings/api/auth/github — cancel keeps you signed in", () => {
     }
     // Token never touched by start/cancel.
     expect(state.githubToken).toBe("ghu_alice")
+    expect(getClientActivitySnapshot().generation).toBe(generation)
+    finish("finished", 200)
+    expect(getClientActivitySnapshot().recentEvents).toHaveLength(1)
     // And /status agrees.
     const statusBody = await (
       await app.request("/settings/api/auth/github/status")

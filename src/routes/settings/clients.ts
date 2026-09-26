@@ -1,5 +1,5 @@
 /**
- * /settings/api/clients — "who's connected to ModelRelay right now?"
+ * /settings/api/clients — "who's connected to CoPo right now?"
  *
  * Auth-gated by the parent middleware (the `/settings/api` group is in
  * `requireAuthPrefixes`, so even when the static settings bundle is
@@ -7,7 +7,7 @@
  * tracker filtered by a caller-supplied freshness window.
  *
  * The menu-bar shell uses this on quit to render "N apps are using
- * ModelRelay" — purely informational, no load-bearing decisions hang
+ * CoPo" — purely informational, no load-bearing decisions hang
  * off the response.
  */
 
@@ -16,7 +16,7 @@ import { z } from "zod"
 
 import { forwardError } from "~/lib/errors/error"
 import { listActiveClients } from "~/lib/http/active-clients"
-import { listClientActivity } from "~/lib/http/client-activity"
+import { getClientActivitySnapshot } from "~/lib/http/client-activity"
 
 const QuerySchema = z.object({
   maxAgeSeconds: z.coerce.number().int().min(5).max(600).default(60),
@@ -24,9 +24,7 @@ const QuerySchema = z.object({
 
 export const clientsRoutes = new Hono()
 
-clientsRoutes.get("/activity", (c) =>
-  c.json({ activity: listClientActivity() }),
-)
+clientsRoutes.get("/activity", (c) => c.json(getClientActivitySnapshot()))
 
 clientsRoutes.get("/", (c) => {
   try {

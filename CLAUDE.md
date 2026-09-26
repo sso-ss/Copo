@@ -16,7 +16,7 @@ Always read the linked doc before acting in its area.
 | Spawn parallel agents / use git stash | [`docs/architecture.md`](docs/architecture.md) → *Parallel-agent convention* |
 | Change `.bun-version` or CI's Bun pin | [`docs/bun-version-policy.md`](docs/bun-version-policy.md) |
 | Write any code | [`docs/code-style.md`](docs/code-style.md) |
-| Touch any HTML, CSS, or component code (Tauri windows, proxy-served pages) | [`.design-context.md`](.design-context.md) — front door; topic deep-dives in [`docs/design/`](docs/design/). **Read `docs/design/failure-modes.md` before any non-trivial UI change.** |
+| Touch any HTML, CSS, or component code (Tauri windows, proxy-served pages) | [`DESIGN.md`](DESIGN.md) — official CoPo design standard; [`.design-context.md`](.design-context.md) links to supporting topics. **Read `docs/design/failure-modes.md` before any non-trivial UI change.** |
 | Work with the Claude Code or Opencode plugin | [`docs/plugins.md`](docs/plugins.md) |
 | Dispatch or review codegen feedback loops | [`docs/codegen-feedback-loops-practices.md`](docs/codegen-feedback-loops-practices.md) |
 | Touch i18n catalogs / translation wording (`shell/src/i18n/`) | [`docs/dev/i18n.md`](docs/dev/i18n.md); loop in the i18n expert per [`CONTRIBUTORS.md`](CONTRIBUTORS.md) |
@@ -41,4 +41,4 @@ those files; don't reinvent it.
 - **No unrestored `mock.module` in tests** — `void mock.module(…)` / bare `mock.module(…)` leak across files and are a lint error (`mockModuleLeakGuard`). Awaiting isn't enough for shared modules; prefer the real module (temp `COPILOT_API_HOME` / `CLAUDE_CONFIG_DIR`) or injectable deps. See architecture doc → *Testing gotchas*.
 - **PR titles are Conventional Commits** (`feat:` / `fix:` / `chore:` / etc.) — squash-merge uses the title verbatim. See architecture doc → *Release & PR conventions*.
 - **Pin matters.** `.bun-version` and `.github/workflows/ci.yml` move together. See Bun version policy.
-- **Design context overrides this file** for any UI work. Read `.design-context.md` and the relevant `docs/design/*.md` topic file.
+- **`DESIGN.md` is authoritative for CoPo UI.** Follow its warm neutral, rounded Companion-inspired style. It supersedes conflicting historical design notes. `.design-context.md` is the topic index; later explicit user instructions take precedence.

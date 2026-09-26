@@ -12,7 +12,7 @@
  * Steps:
  *   1. `gh release download <tag> --pattern '*-darwin-arm64.tar.gz*'`
  *   2. Verify the SHA-256 against the sidecar file.
- *   3. Assemble `ModelRelay.app` from build/macos/app-template + the
+ *   3. Assemble `CoPo.app` from build/macos/app-template + the
  *      unpacked binary (same logic the `macos-app-zip` CI job runs).
  *   4. `npx create-dmg ...` to build the polished DMG.
  *   5. Sidecar `.sha256`. Optional `--upload` attaches both to the
@@ -216,8 +216,8 @@ async function main(): Promise<number> {
     throw new Error(`maximal binary not found in ${unpackedRoot}`)
   }
 
-  console.log("==> Assembling ModelRelay.app")
-  const appOut = path.join(work, "ModelRelay.app")
+  console.log("==> Assembling CoPo.app")
+  const appOut = path.join(work, "CoPo.app")
   assembleApp(binarySrc, "build/macos/app-template", appOut, version)
 
   console.log("==> Building DMG via create-dmg")
@@ -232,7 +232,7 @@ async function main(): Promise<number> {
   // This local recovery path is intentionally unsigned. The resulting DMG
   // will trigger Gatekeeper on first open.
   createDmgArgs.push("--identity=")
-  createDmgArgs.push(`--dmg-title=ModelRelay ${version}`)
+  createDmgArgs.push(`--dmg-title=CoPo ${version}`)
   // create-dmg exits non-zero if codesign isn't set up but still
   // produces the .dmg. Tolerate non-zero by checking for output.
   const r = spawnSync("npx", createDmgArgs, { stdio: "inherit" })

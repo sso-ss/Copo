@@ -1,23 +1,26 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiCall } from "../../../proxy/client";
 import type { AppEntry } from "../../../proxy/client";
 import { humanize } from "../api-clients/humanize";
+import { useConnectionChanges } from "../../hooks/useConnectionChanges";
+import { isMissingAppError } from "./configuration";
 
 /**
  * Data hook over `/settings/api/apps`. Owns the list of integrations,
- * loading + error state, and the two mutation verbs the Apps screen needs.
+ * loading + error state, and configuration changes for the Apps screen.
  * Each mutation returns a single fresh `AppEntry` (the contract guarantees
  * this), which we splice back into the list in place — no full reload
  * needed, so the rest of the screen doesn't flicker.
  *
  * `refresh()` re-fetches the whole list and is exposed for the
- * "Re-scan" affordance (after the user installs Claude Code in their
- * terminal) and for the nav-driven refetch in main.ts.
+ * navigation and background reconciliation. Configure calls a mutation
+ * endpoint, which freshly detects the app before changing its settings.
  */
 export interface MutationResult {
   ok: boolean;
   error?: string;
+  notInstalled?: boolean;
 }
 
 interface UseApps {
@@ -38,13 +41,16 @@ export function useApps(): UseApps {
   const [apps, setApps] = useState<Array<AppEntry>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const revision = useRef(0);
 
   const refresh = useCallback(async () => {
+    const current = ++revision.current;
     const result = await apiCall({
       kind: "apps-list",
       method: "GET",
       path: "/settings/api/apps",
     });
+    if (current !== revision.current) return;
     if (result.ok) {
       setApps(sortAlpha(result.data.apps));
       setError(null);
@@ -53,6 +59,7 @@ export function useApps(): UseApps {
     }
     setIsLoading(false);
   }, []);
+  useConnectionChanges(refresh);
 
   useEffect(() => {
     void refresh();
@@ -69,6 +76,7 @@ export function useApps(): UseApps {
 
   // Replace one app's state with the fresh object the mutation returned.
   const splice = useCallback((fresh: AppEntry) => {
+    revision.current++;
     setApps((prev) =>
       sortAlpha(prev.map((app) => {
         if (app.id === fresh.id) return fresh;
@@ -91,14 +99,15 @@ export function useApps(): UseApps {
       });
       if (!result.ok) {
         const message = humanize(result.error);
-        setError(message);
-        return { ok: false, error: message };
+        await refresh();
+        return { ok: false, error: message,
+          notInstalled: enabled && isMissingAppError(result.error, "claude-code") };
       }
       setError(null);
       splice(result.data);
       return { ok: true };
     },
-    [splice],
+    [splice, refresh],
   );
 
   const toggleClaudeDesktop = useCallback<UseApps["toggleClaudeDesktop"]>(
@@ -111,14 +120,15 @@ export function useApps(): UseApps {
       });
       if (!result.ok) {
         const message = humanize(result.error);
-        setError(message);
-        return { ok: false, error: message };
+        await refresh();
+        return { ok: false, error: message,
+          notInstalled: enabled && isMissingAppError(result.error, "claude-desktop") };
       }
       setError(null);
       splice(result.data);
       return { ok: true };
     },
-    [splice],
+    [splice, refresh],
   );
 
   const toggleCodex = useCallback<UseApps["toggleCodex"]>(
@@ -139,9 +149,9 @@ export function useApps(): UseApps {
       );
       if (!result.ok) {
         const message = humanize(result.error);
-        setError(message);
         await refresh();
-        return { ok: false, error: message };
+        return { ok: false, error: message,
+          notInstalled: enabled && isMissingAppError(result.error, desktop ? "codex-desktop" : "codex") };
       }
       setError(null);
       splice(result.data);

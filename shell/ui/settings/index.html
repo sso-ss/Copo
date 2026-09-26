@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ModelRelay — Settings</title>
+    <title>CoPo — Settings</title>
     <!-- Pretendard is bundled locally for offline Latin and Korean text. -->
     <style>
       @font-face {
@@ -46,6 +46,9 @@
               <a class="nav__item" href="#models" data-nav="models" data-i18n="nav-models"></a>
             </li>
             <li>
+              <a class="nav__item" href="#personalization" data-nav="personalization" data-i18n="nav-personalization"></a>
+            </li>
+            <li>
               <a class="nav__item" href="#logs" data-nav="logs" data-i18n="nav-logs"></a>
             </li>
             <li>
@@ -64,6 +67,34 @@
         </nav>
 
         <main class="pane" id="pane">
+          <section class="section" data-section="personalization" hidden>
+            <header class="section__head">
+              <h2 class="section__title personalization-title" data-i18n="personalization-title"></h2>
+              <p class="section__sub" data-i18n="personalization-sub"></p>
+            </header>
+            <div class="personalization-options">
+              <div class="personalization-preview" data-buddy-size="medium">
+                <img class="personalization-preview__buddy" src="../companion/artwork/cat-idle.png" width="1024" height="1040" alt="" data-i18n-alt="personalization-preview-alt" draggable="false">
+              </div>
+              <fieldset class="personalization-field">
+                <legend data-i18n="personalization-appearance"></legend>
+                <div class="personalization-segments">
+                  <label><input type="radio" name="appearance" data-preference="appearance" value="system" checked disabled><span data-i18n="personalization-system"></span></label>
+                  <label><input type="radio" name="appearance" data-preference="appearance" value="light" disabled><span data-i18n="personalization-light"></span></label>
+                  <label><input type="radio" name="appearance" data-preference="appearance" value="dark" disabled><span data-i18n="personalization-dark"></span></label>
+                </div>
+              </fieldset>
+              <fieldset class="personalization-field">
+                <legend data-i18n="personalization-buddy-size"></legend>
+                <div class="personalization-segments">
+                  <label><input type="radio" name="buddy-size" data-preference="buddySize" value="small" disabled><span data-i18n="personalization-small"></span></label>
+                  <label><input type="radio" name="buddy-size" data-preference="buddySize" value="medium" checked disabled><span data-i18n="personalization-medium"></span></label>
+                  <label><input type="radio" name="buddy-size" data-preference="buddySize" value="large" disabled><span data-i18n="personalization-large"></span></label>
+                </div>
+              </fieldset>
+              <p id="personalization-error" class="state__caption" role="alert" hidden></p>
+            </div>
+          </section>
           <!-- ACCOUNT -->
           <section class="section" data-section="account">
             <header class="section__head">

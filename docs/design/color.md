@@ -1,78 +1,49 @@
-# Color
+# CoPo color
 
-Four roles, deliberately split to keep each from flooding the surface.
-**Token values live in [`shell/src/tokens.css`](../../shell/src/tokens.css).**
-This file describes role, scope, and the reasoning behind the split.
+Follow [DESIGN.md](../../DESIGN.md). The official style uses warm paper surfaces
+in light mode, soft charcoal in dark mode, ink text, and neutral controls.
+The earlier teal and crimson direction is superseded.
 
-| Token | Role |
-|---|---|
-| `--brand` | Crimson. **Identity only.** Mark, hero, badging, attention-state tray dot. |
-| `--accent` | Teal. **Interactive surfaces.** Primary buttons, switches, focus rings, active nav. |
-| `--accent-destructive` | Crimson-adjacent. **Destructive actions only.** |
-| `--link` | Sister cool tone to `--accent`. **Prose links only.** |
+## Source and synchronization
 
-Foreground pairings: `--brand-fg`, `--accent-fg`,
-`--accent-destructive-foreground`.
+[theme.ts](../../shell/src/ui/styles/theme.ts) owns exact values.
+[generate-css-tokens.ts](../../scripts/generate-css-tokens.ts) emits both theme
+selectors into the shared Settings/Companion tokens and the independent Dashboard
+stylesheet. Regenerate both when values change; do not maintain separate palettes.
 
-## Why the split exists
+## Roles
 
-The crimson was historically dual-purposed: brand mark *and* primary
-button fill *and* focus ring. Every interactive surface read as
-"brand" — so the brand stopped reading as anything special, and the
-UI felt shouty.
+| Role | Tokens | Use |
+|---|---|---|
+| Surfaces | `--surface-base`, `--surface-card`, `--surface-control` | Warm neutral layers with quiet separation |
+| Preview | `--surface-companion-preview` | Neutral stage for the cat |
+| Text | `--text-strong`, `--text-base-color`, `--text-muted` | Readable hierarchy |
+| Controls | `--accent`, `--accent-hover`, `--accent-fg` | Neutral primary actions and active controls |
+| Links | `--link`, `--link-hover` | Understated ink tones |
+| Boundaries | `--border-subtle`, `--border-strong` | Dividers and necessary control edges |
+| Destructive actions | `--accent-destructive`, `--accent-destructive-foreground` | Caution and contrasting labels |
+| Status | `--status-*` and foreground pairs | Meaningful error, warning, success, and information states |
 
-Pulling interactive duty onto teal `--accent` recovered the brand
-voice (it now appears once or twice per window, deliberately) while
-giving interactions a calm, cooler tone that doesn't compete with
-content.
+Preserve the cat and cheese artwork's colors. Do not apply artwork colors to
+buttons or derive an app-wide accent from the cheese. Existing legacy `--brand`
+values must not reintroduce the old crimson identity.
 
-## Destructive is not brand
+## Contrast and themes
 
-`--accent-destructive` stays in the crimson family because
-destructive actions want urgency, which is the one place the brand's
-warning-red quality earns its keep. It is **not** the same value as
-`--brand` — destructive is a hair deeper so it reads as "caution"
-rather than "identity."
+- Support System, Light, and Dark. The root `data-theme` selects the full palette.
+- Change surface, text, accent/foreground, link, and status pairs together.
+  Shape and spacing stay consistent between themes.
+- Text and button labels must meet WCAG AA. Check base, card, control, and preview
+  surfaces, including hover and destructive controls.
+- Use adequate contrast for focus rings and control boundaries. Do not communicate
+  status through color alone.
+- If user-selected custom colors are supported, explain insufficient contrast
+  without silently replacing the user's choice.
+- Avoid bright decorative fills, heavy gradients, and low-contrast helper text.
 
-## Link is sister to accent
+## Artwork
 
-`--link` and `--link-hover` share `--accent`'s teal family but shift
-lighter on dark / darker on light so each theme clears WCAG AA
-against both `--surface-base` and `--surface-card`. Distinct enough
-from `--accent` that a primary button (accent-filled) and an inline
-prose link don't read as the same affordance.
-
-Measured contrast on the current values is recorded in the comment
-block above `--link` in `tokens.css`. Re-measure if you change either.
-
-## Contrast contract
-
-- **Target: WCAG AA (4.5:1)** across all colors, contrast, and focus
-  rings. AAA where reachable without sacrificing the palette.
-- **User-themable accent and surface colors.** Brand red is default;
-  users dial in their own UI color and icon color in Settings.
-- **Contrast is ours.** When a user picks a combination whose
-  body-text contrast drops below 4.5:1, surface a warning chip near
-  the affected control.
-- **Never block.** The user is in charge — be honest about the
-  consequence, then defer to them. See
-  [`principles.md`](principles.md) → Principle 3.
-- The system computes contrast against `--surface-card` (where most
-  text sits) and warns when text-on-card drops below WCAG AA.
-
-## Theme override
-
-- **Both light and dark**, with explicit override in Settings (matches
-  Anthropic's monitor / sun / moon toggle). **System**
-  (`prefers-color-scheme`) is the third option and the default.
-- Theme is applied via `[data-theme="light"]` / `[data-theme="dark"]`
-  on the root; only surface, text, and `--link*` keys override per
-  theme. Numeric and structural tokens stay constant.
-
-## Status colors (Dashboard only, currently)
-
-`--status-error`, `--status-success`, `--status-warning`,
-`--status-info` (and their `-fg` pairings) are declared in
-`shell/ui/dashboard/style.css`. They are **not** in `tokens.css`. If
-you need them in Settings, promote them into `tokens.css` first via
-[`change-checklists.md`](change-checklists.md) → *Adding a new token*.
+The supplied pixel-art cheese is CoPo's identity asset; the cat is its companion.
+Keep their proportions and crisp edges. The source cheese is
+[the existing SVG](../../shell/assets/copo-cheese.svg); theme changes do not call
+for new artwork or recoloring it.

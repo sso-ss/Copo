@@ -1,5 +1,7 @@
 import type { AppEntry } from "~/lib/config/settings-types"
 
+import { claudeCodeInstallHint } from "~/lib/config/app-install-hints"
+
 import type { AppUninstallResult, ClientApp } from "../index"
 
 import {
@@ -8,6 +10,9 @@ import {
   revertProxyBaseUrl,
   getClaudeCodeSettingsPath,
   HELPER_LABEL,
+  readClaudeCodeSettings,
+  getBaseUrlOwnership,
+  getApiKeyHelperOwnership,
 } from "./config"
 import { detectClaudeInstalls } from "./detect"
 import {
@@ -15,9 +20,6 @@ import {
   reconcileClaudeCodeOnShutdown,
   setClaudeCodeRoutingIntent,
 } from "./reconcile"
-
-const CLAUDE_CODE_INSTALL_COMMAND =
-  "curl -fsSL https://claude.ai/install.sh | sh"
 
 export const claudeCodeApp: ClientApp = {
   id: "claude-code",
@@ -32,11 +34,19 @@ export const claudeCodeApp: ClientApp = {
 
   getDetails(conflict: AppEntry["conflict"] = null): Promise<AppEntry> {
     const installs = detectClaudeInstalls()
+    const settings = readClaudeCodeSettings()
+    const baseUrlOwnership = getBaseUrlOwnership(settings)
+    const helperOwnership = getApiKeyHelperOwnership(settings)
+    let currentConflict: AppEntry["conflict"] = null
+    if (baseUrlOwnership === "foreign") currentConflict = "foreign-base-url"
+    else if (helperOwnership === "foreign") {
+      currentConflict = "foreign-api-key-helper"
+    }
     return Promise.resolve({
       id: "claude-code",
       name: "Claude Code",
       kind: "config",
-      enabled: isProxyBaseUrlConfigured(),
+      enabled: baseUrlOwnership === "ours" && helperOwnership === "ours",
       status: installs.length > 0 ? "ready" : "not-installed",
       installs: installs.map((i) => ({
         path: i.path,
@@ -45,9 +55,9 @@ export const claudeCodeApp: ClientApp = {
       })),
       install:
         installs.length === 0 ?
-          { method: "curl", command: CLAUDE_CODE_INSTALL_COMMAND }
+          claudeCodeInstallHint(process.platform === "win32")
         : null,
-      conflict,
+      conflict: conflict ?? currentConflict,
     })
   },
 
@@ -65,7 +75,13 @@ export const claudeCodeApp: ClientApp = {
     // API key must not leave boot reconciliation enabled for a route we could
     // not configure.
     if (success) setClaudeCodeRoutingIntent(true)
-    return Promise.resolve({ success, conflict })
+    return Promise.resolve({
+      success,
+      conflict,
+      ...(result.skippedReason === "missing-api-key" ?
+        { error: result.skippedReason }
+      : {}),
+    })
   },
 
   disable() {

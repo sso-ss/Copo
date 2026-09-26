@@ -18,12 +18,20 @@
  */
 
 import type { AuthStatus } from "~/lib/config/settings-types"
+import type {
+  ClientActivitySnapshot,
+  ClientRequestEvent,
+} from "~/lib/http/client-activity-types"
 
 import { EventBus } from "~/lib/runtime-state/event-bus"
 
 export interface SettingsEventMap {
   /** The full new auth status, identical to GET /settings/api/auth/github/status. */
   "auth.changed": AuthStatus
+  "activity.snapshot": ClientActivitySnapshot
+  "activity.request": ClientRequestEvent
+  /** Invalidate routing/key views; never send the secret-bearing mutation body. */
+  "connections.changed": Record<string, never>
 }
 
 export const settingsEventBus = new EventBus<SettingsEventMap>()

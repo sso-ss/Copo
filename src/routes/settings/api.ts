@@ -40,6 +40,7 @@ import { apiKeysRoutes } from "./api-keys"
 import { appsRoutes } from "./apps"
 import { authRoutes } from "./auth"
 import { clientsRoutes } from "./clients"
+import { companionRoutes } from "./companion"
 import { eventsRoutes } from "./events"
 import { ghRoutes } from "./gh"
 import { modelsRoutes } from "./models"
@@ -165,6 +166,7 @@ settingsApiRoutes.route("/gh", ghRoutes)
 settingsApiRoutes.route("/accounts", accountsRoutes)
 settingsApiRoutes.route("/api-keys", apiKeysRoutes)
 settingsApiRoutes.route("/clients", clientsRoutes)
+settingsApiRoutes.route("/companion", companionRoutes)
 settingsApiRoutes.route("/apps", appsRoutes)
 settingsApiRoutes.route("/models", modelsRoutes)
 settingsApiRoutes.route("/events", eventsRoutes)

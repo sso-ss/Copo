@@ -1,13 +1,21 @@
+import { useEffect, useState } from "react";
+
 import { AppCard } from "./AppCard";
 import { useApps } from "./useApps";
 import { Stack } from "../../components/Stack";
+import { t } from "../../../i18n";
 
 export function AppsPanel(): JSX.Element {
+  const [, repaint] = useState(0);
+  useEffect(() => {
+    const onLocaleChange = () => repaint((revision) => revision + 1);
+    window.addEventListener("maximal:locale-changed", onLocaleChange);
+    return () => window.removeEventListener("maximal:locale-changed", onLocaleChange);
+  }, []);
   const {
     apps,
     isLoading,
     error,
-    refresh,
     toggleClaudeCode,
     toggleClaudeDesktop,
     toggleCodex,
@@ -22,15 +30,14 @@ export function AppsPanel(): JSX.Element {
       )}
 
       {isLoading && apps.length === 0 ? (
-        <p className="state__caption">Looking for installed apps…</p>
+        <p className="state__caption">{t("apps-loading")}</p>
       ) : (
         <Stack proximity="section" className="apps-list">
           {apps.map((app) => (
             <AppCard
               key={app.id}
               app={app}
-              onRescan={refresh}
-              onToggle={
+              onConfigure={
                 app.id === "claude-desktop"
                   ? (enabled) => toggleClaudeDesktop(enabled)
                   : app.id === "codex" || app.id === "codex-desktop"

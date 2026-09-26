@@ -126,13 +126,19 @@ Settings → API keys shows live inference activity for each named key. The auth
 middleware tracks POST requests to Messages, Responses, Chat Completions, and
 Embeddings; discovery, token counting, and settings polling do not count.
 `GET /settings/api/clients/activity` returns the in-memory status and active
-request count without keys or message contents. The UI polls every two seconds.
+request count without keys or message contents. It also includes a session
+generation, event watermark, active request records, and bounded terminal
+history. The existing Settings UI polls every two seconds. The authenticated
+settings SSE channel additionally publishes ordered request events and initial
+snapshots for the upcoming Companion background subscriber.
 
 Streaming responses remain working until consumed to the end. SSE completion
 markers distinguish finished responses from truncated streams; HTTP errors,
 stream errors, and cancellation are stopped. Concurrent requests keep the key
 working until all have ended. History resets on restart and is bounded; these
 are request states, not app-process health or whole-agent task completion.
+See [Companion implementation](dev/companion-implementation.md) for the event
+consumer contract, current integration capabilities, and remaining work.
 
 ## Token counting
 

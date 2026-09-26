@@ -11,6 +11,7 @@ import { Hono } from "hono"
 
 import { getAllApps, getApp } from "~/apps/registry"
 import { getConfig, writeConfig, type AppConfig } from "~/lib/config/config"
+import { settingsEventBus } from "~/lib/config/settings-events"
 import {
   AppEntry,
   AppsListResponse,
@@ -35,6 +36,29 @@ function jsonApp(c: Context, app: AppEntryT) {
   return respondValidated(c, { schema: AppEntry, label: "App" }, app)
 }
 
+const CLAUDE_CODE_ERRORS = {
+  "not-installed": "Install Claude Code, then try connecting again.",
+  "foreign-base-url":
+    "Claude Code is configured for another gateway. Remove ANTHROPIC_BASE_URL from its settings, then try connecting again.",
+  "foreign-api-key-helper":
+    "Claude Code uses a custom API key helper. Remove apiKeyHelper from its settings, then try connecting again.",
+  "missing-api-key":
+    "Create an enabled API key in CoPo Settings, then try connecting again.",
+  "connection-change-failed": "Could not change Claude Code routing.",
+} as const
+
+function claudeCodeError(c: Context, reason: keyof typeof CLAUDE_CODE_ERRORS) {
+  return c.json(
+    {
+      error: {
+        type: `claude-code-${reason}`,
+        message: CLAUDE_CODE_ERRORS[reason],
+      },
+    },
+    409,
+  )
+}
+
 /** Merge an `apps.claudeDesktop` patch into config and persist. */
 function persistClaudeDesktop(enabled: boolean): void {
   const config: AppConfig = getConfig()
@@ -52,6 +76,15 @@ function persistClaudeDesktop(enabled: boolean): void {
 
 export const appsRoutes = new Hono()
 
+appsRoutes.use("*", async (c, next) => {
+  try {
+    await next()
+  } finally {
+    if (c.req.method !== "GET")
+      settingsEventBus.publish("connections.changed", {})
+  }
+})
+
 for (const id of ["codex", "codex-desktop"] as const) {
   appsRoutes.post(`/${id}/toggle`, async (c) => {
     try {
@@ -62,6 +95,17 @@ for (const id of ["codex", "codex-desktop"] as const) {
         throw httpError("Expected { enabled: boolean, model?: string }", 400)
       const app = getApp(id)
       if (!app) throw httpError("App not found", 404)
+      if (parsed.data.enabled && !(await app.detect())) {
+        return c.json(
+          {
+            error: {
+              type: `${id}-not-installed`,
+              message: `Install ${app.name}, then try configuring it again.`,
+            },
+          },
+          409,
+        )
+      }
       try {
         await (parsed.data.enabled ?
           app.enable({ model: parsed.data.model })
@@ -113,16 +157,18 @@ appsRoutes.post("/claude-code/toggle", async (c) => {
     if (parsed.data.enabled) {
       const isInstalled = await app.detect()
       if (!isInstalled) {
-        throw httpError(
-          "No Claude Code install detected. Install it first, then enable routing.",
-          409,
-        )
+        return claudeCodeError(c, "not-installed")
       }
       const result = await app.enable()
-      const conflict = result.conflict || null
+      if (!result.success) {
+        return claudeCodeError(
+          c,
+          result.conflict ?? result.error ?? "connection-change-failed",
+        )
+      }
       // `app.enable()` is the single owner of the claude-code routing intent
       // (persists config.apps.claudeCode.enabled itself) — no separate persist.
-      return jsonApp(c, await app.getDetails(conflict))
+      return jsonApp(c, await app.getDetails())
     }
 
     await app.disable()
@@ -142,6 +188,18 @@ appsRoutes.post("/claude-desktop/toggle", async (c) => {
 
     const app = getApp("claude-desktop")
     if (!app) throw httpError("App not found", 404)
+
+    if (parsed.data.enabled && !(await app.detect())) {
+      return c.json(
+        {
+          error: {
+            type: "claude-desktop-not-installed",
+            message: "Install Claude Desktop, then try configuring it again.",
+          },
+        },
+        409,
+      )
+    }
 
     await (parsed.data.enabled ? app.enable() : app.disable())
     persistClaudeDesktop(parsed.data.enabled)

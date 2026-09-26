@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ModelRelay",
+  "productName": "CoPo",
   "version": "0.1.0",
   "identifier": "com.sso-ss.modelrelay",
   "build": {

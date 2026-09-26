@@ -32,12 +32,12 @@ export const server = new Hono()
 
 /** Captured at module load — anchors the `/status` uptime to "when the
  *  server module first ran," which is what callers mean by "how long has
- *  ModelRelay been up." */
+ *  CoPo been up." */
 const SERVER_START_MS = Date.now()
 
 server.use(traceIdMiddleware)
 // Stamp the proxy build version on every response so downstream clients
-// can read which ModelRelay build served their request without hitting a
+// can read which CoPo build served their request without hitting a
 // separate endpoint. Global (right after trace) means it lands on
 // completion responses, /status, /settings/api/*, redirects, and errors
 // alike. Value is a static build constant — no per-request cost, no
@@ -103,7 +103,7 @@ server.get("/", (c) => c.text("Server running"))
 
 // Identity + liveness probe. Unauthenticated and loopback-friendly so a
 // local caller (the Claude Code shim, a health check, a script) can ask
-// "is the thing on :4141 actually ModelRelay, is it up, and is it ready to
+// "is the thing on :4141 actually CoPo, is it up, and is it ready to
 // serve?" without an API key. The `service: "maximal"` field is the
 // unambiguous identity marker the shim keys off; `subsystems` namespaces
 // per-part health so new subsystems slot in without reshaping the

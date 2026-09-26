@@ -28,7 +28,16 @@
  *     Claude-3p userData dir. The mock redirects it to a tmp home.
  */
 
-import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test"
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  spyOn,
+  test,
+} from "bun:test"
 import { Hono } from "hono"
 import fs from "node:fs"
 import os from "node:os"
@@ -83,9 +92,13 @@ await mock.module("~/apps/claude-desktop/config", () => ({
     (realGetDir as (...a: Array<unknown>) => unknown)(home, ...rest),
 }))
 
+const { ApiErrorBody, AppEntry, AppsListResponse } =
+  await import("~/lib/config/settings-types")
 const { appsRoutes } = await import("~/routes/settings/apps")
 const { getConfig, writeConfig } = await import("~/lib/config/config")
 const { isProxyBaseUrlConfigured } = await import("~/apps/claude-code/config")
+const { claudeDesktopApp } = await import("~/apps/claude-desktop")
+const { claudeCodeInstallHint } = await import("~/lib/config/app-install-hints")
 
 function buildApp() {
   const app = new Hono()
@@ -158,7 +171,7 @@ describe("GET /apps", () => {
     const cc = body.apps.find((a) => a.id === "claude-code")
     expect(cc?.status).toBe("not-installed")
     expect(cc?.install?.command).toBe(
-      "curl -fsSL https://claude.ai/install.sh | sh",
+      claudeCodeInstallHint(process.platform === "win32").command,
     )
   })
 
@@ -205,6 +218,52 @@ describe("POST /apps/claude-code/toggle", () => {
       body: JSON.stringify({ enabled: true }),
     })
     expect(res.status).toBe(409)
+    expect(ApiErrorBody.parse(await res.json()).error.type).toBe(
+      "claude-code-not-installed",
+    )
+    expect(fs.existsSync(ROUTE_CC_SETTINGS)).toBe(false)
+    expect(getConfig().apps?.claudeCode?.enabled).not.toBe(true)
+  })
+
+  test("configure detects an app installed after the initial list was loaded", async () => {
+    const app = buildApp()
+    const initial = AppsListResponse.parse(
+      await (await app.request("/apps")).json(),
+    )
+    expect(
+      initial.apps.find((entry) => entry.id === "claude-code")?.status,
+    ).toBe("not-installed")
+    installsFixture = [fakeInstall("/opt/homebrew/bin/claude")]
+    const res = await app.request("/apps/claude-code/toggle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled: true }),
+    })
+    expect(res.status).toBe(200)
+    expect(AppEntry.parse(await res.json()).enabled).toBe(true)
+  })
+
+  test("key provisioning refusal returns an actionable failure", async () => {
+    installsFixture = [fakeInstall("/opt/homebrew/bin/claude")]
+    const { claudeCodeApp } = await import("~/apps/claude-code")
+    const enable = spyOn(claudeCodeApp, "enable").mockResolvedValue({
+      success: false,
+      error: "missing-api-key",
+    })
+    try {
+      const res = await buildApp().request("/apps/claude-code/toggle", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: true }),
+      })
+      expect(res.status).toBe(409)
+      expect(ApiErrorBody.parse(await res.json()).error.type).toBe(
+        "claude-code-missing-api-key",
+      )
+      expect(getConfig().apps?.claudeCode?.enabled).not.toBe(true)
+    } finally {
+      enable.mockRestore()
+    }
   })
 
   test("enable surfaces a conflict when a foreign base URL is present", async () => {
@@ -219,15 +278,64 @@ describe("POST /apps/claude-code/toggle", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ enabled: true }),
     })
-    expect(res.status).toBe(200)
-    const body = (await res.json()) as {
-      enabled: boolean
-      conflict: string | null
-    }
-    expect(body.conflict).toBe("foreign-base-url")
+    expect(res.status).toBe(409)
+    expect(ApiErrorBody.parse(await res.json()).error.type).toBe(
+      "claude-code-foreign-base-url",
+    )
     // We did NOT overwrite the user's base URL.
     expect(isProxyBaseUrlConfigured(ROUTE_CC_SETTINGS)).toBe(false)
-    expect(body.enabled).toBe(false)
+    expect(getConfig().apps?.claudeCode?.enabled).not.toBe(true)
+    const list = AppsListResponse.parse(
+      await (await buildApp().request("/apps")).json(),
+    )
+    expect(
+      list.apps.find((entry: { id: string }) => entry.id === "claude-code"),
+    ).toMatchObject({ enabled: false, conflict: "foreign-base-url" })
+  })
+
+  test("another local gateway and its owned helper are preserved on refusal", async () => {
+    installsFixture = [fakeInstall("/opt/homebrew/bin/claude")]
+    const { mergeBaseUrl } = await import("~/apps/claude-code/config")
+    const settings = mergeBaseUrl({}, "echo 'other-gateway-key'")
+    settings.env = {
+      ...(settings.env as object),
+      ANTHROPIC_BASE_URL: "http://127.0.0.1:4142",
+    }
+    const original = JSON.stringify(settings)
+    fs.writeFileSync(ROUTE_CC_SETTINGS, original)
+    const res = await buildApp().request("/apps/claude-code/toggle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled: true }),
+    })
+    expect(res.status).toBe(409)
+    expect(ApiErrorBody.parse(await res.json()).error.type).toBe(
+      "claude-code-foreign-base-url",
+    )
+    expect(fs.readFileSync(ROUTE_CC_SETTINGS, "utf8")).toBe(original)
+  })
+
+  test("a custom helper refusal stays visible after refreshing apps", async () => {
+    installsFixture = [fakeInstall("/opt/homebrew/bin/claude")]
+    const original = JSON.stringify({ apiKeyHelper: "my-custom-helper secret" })
+    fs.writeFileSync(ROUTE_CC_SETTINGS, original)
+    const app = buildApp()
+    const res = await app.request("/apps/claude-code/toggle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled: true }),
+    })
+    expect(res.status).toBe(409)
+    const body = ApiErrorBody.parse(await res.json())
+    expect(body.error.type).toBe("claude-code-foreign-api-key-helper")
+    expect(JSON.stringify(body)).not.toContain("secret")
+    expect(fs.readFileSync(ROUTE_CC_SETTINGS, "utf8")).toBe(original)
+    const list = AppsListResponse.parse(
+      await (await app.request("/apps")).json(),
+    )
+    expect(
+      list.apps.find((entry: { id: string }) => entry.id === "claude-code"),
+    ).toMatchObject({ enabled: false, conflict: "foreign-api-key-helper" })
   })
 
   test("disable reverts the base URL and persists enabled=false", async () => {
@@ -261,6 +369,50 @@ describe("POST /apps/claude-code/toggle", () => {
 })
 
 describe("POST /apps/claude-desktop/toggle", () => {
+  let detect: ReturnType<typeof spyOn<typeof claudeDesktopApp, "detect">>
+
+  beforeEach(() => {
+    detect = spyOn(claudeDesktopApp, "detect").mockResolvedValue(true)
+  })
+
+  afterEach(() => detect.mockRestore())
+
+  test("a missing app returns installation help without writing configuration", async () => {
+    detect.mockResolvedValue(false)
+    const res = await buildApp().request("/apps/claude-desktop/toggle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled: true }),
+    })
+    expect(res.status).toBe(409)
+    expect(ApiErrorBody.parse(await res.json()).error.type).toBe(
+      "claude-desktop-not-installed",
+    )
+    expect(getConfig().apps?.claudeDesktop?.enabled).not.toBe(true)
+    expect(actualDesktop.isConfigLibraryApplied(ROUTE_3P_HOME)).toBe(false)
+    expect(fs.readdirSync(ROUTE_3P_HOME)).toEqual([])
+  })
+
+  test("configuration failure is not reported as a missing installation", async () => {
+    const enable = spyOn(claudeDesktopApp, "enable").mockRejectedValue(
+      new Error("Permission denied"),
+    )
+    try {
+      const res = await buildApp().request("/apps/claude-desktop/toggle", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: true }),
+      })
+      expect(res.status).toBeGreaterThanOrEqual(400)
+      expect(ApiErrorBody.parse(await res.json()).error.type).not.toBe(
+        "claude-desktop-not-installed",
+      )
+      expect(getConfig().apps?.claudeDesktop?.enabled).not.toBe(true)
+    } finally {
+      enable.mockRestore()
+    }
+  })
+
   test("enable applies proxy config and persists enabled=true", async () => {
     const res = await buildApp().request("/apps/claude-desktop/toggle", {
       method: "POST",
@@ -282,6 +434,8 @@ describe("POST /apps/claude-desktop/toggle", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ enabled: true }),
     })
+    // Disconnect must still remove saved configuration after uninstallation.
+    detect.mockResolvedValue(false)
     const res = await app.request("/apps/claude-desktop/toggle", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -291,4 +445,25 @@ describe("POST /apps/claude-desktop/toggle", () => {
     expect(getConfig().apps?.claudeDesktop?.enabled).toBe(false)
     expect(actualDesktop.isConfigLibraryApplied(ROUTE_3P_HOME)).toBe(false)
   })
+})
+
+test("missing Codex returns installation help before applying any settings", async () => {
+  const { codexApp } = await import("~/apps/codex")
+  const detect = spyOn(codexApp, "detect").mockResolvedValue(false)
+  const enable = spyOn(codexApp, "enable").mockResolvedValue({ success: true })
+  try {
+    const res = await buildApp().request("/apps/codex/toggle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled: true }),
+    })
+    expect(res.status).toBe(409)
+    expect(ApiErrorBody.parse(await res.json()).error.type).toBe(
+      "codex-not-installed",
+    )
+    expect(enable).not.toHaveBeenCalled()
+  } finally {
+    detect.mockRestore()
+    enable.mockRestore()
+  }
 })

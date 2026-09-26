@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { apiCall } from "../../../proxy/client";
-import type { ClientActivity } from "../../../../../src/lib/http/client-activity";
+import type { ClientActivity } from "../../../../../src/lib/http/client-activity-types";
 
 /** Poll after each response so slow requests cannot overlap or overwrite newer data. */
 export function useClientActivity(): Record<string, ClientActivity> | null {
