@@ -39,7 +39,7 @@ describe("macos installer templates", () => {
     const xml = read(INFO_PLIST)
     expect(xml).toContain("<?xml")
     expect(xml).toContain("<key>CFBundleIdentifier</key>")
-    expect(xml).toContain("<string>co.stuffbucket.maximal</string>")
+    expect(xml).toContain("<string>com.sso-ss.modelrelay</string>")
     expect(xml).toContain("<key>CFBundleExecutable</key>")
     expect(xml).toContain("<string>first-launch</string>")
     expect(xml).toContain("<key>LSUIElement</key>")

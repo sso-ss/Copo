@@ -42,6 +42,7 @@ const RU: &str = include_str!("../../src/i18n/ru.json");
 const JA: &str = include_str!("../../src/i18n/ja.json");
 const IT: &str = include_str!("../../src/i18n/it.json");
 const PT: &str = include_str!("../../src/i18n/pt.json");
+const KO: &str = include_str!("../../src/i18n/ko.json");
 
 /// The locale tags this build ships, in declared order — the same set the
 /// picker offers. Used both for the best-fit matcher and to validate an
@@ -49,7 +50,7 @@ const PT: &str = include_str!("../../src/i18n/pt.json");
 /// shell/src/i18n/index.ts.
 pub const AVAILABLE: &[&str] = &[
     "en", "en-GB", "es", "es-MX", "es-ES", "zh", "fr", "de", "ru", "ja", "it",
-    "pt",
+    "pt", "ko",
 ];
 
 fn raw(tag: &str) -> &'static str {
@@ -66,6 +67,7 @@ fn raw(tag: &str) -> &'static str {
         "ja" => JA,
         "it" => IT,
         "pt" => PT,
+        "ko" => KO,
         _ => "{}",
     }
 }
@@ -138,7 +140,7 @@ pub fn tr(locale: &str, key: &str) -> String {
 ///
 /// `os_locale` is the system UI locale (from `sys_locale::get_locale()`), used
 /// only as the fallback for strings that fire before any webview — and thus any
-/// picker choice — exists (e.g. the first-launch "Maximal is running" banner).
+/// picker choice — exists (e.g. the first-launch "ModelRelay is running" banner).
 pub fn resolve_locale(persisted: Option<&str>, os_locale: Option<&str>) -> String {
     if let Some(tag) = persisted {
         if AVAILABLE.contains(&tag) {
@@ -172,7 +174,7 @@ mod tests {
         // en is the base; every native key we render must exist in it.
         let en = &catalogs()["en"];
         assert!(en.contains_key("native-tray-quit"));
-        assert_eq!(en["native-tray-quit"], "Quit Maximal");
+        assert_eq!(en["native-tray-quit"], "Quit ModelRelay");
     }
 
     #[test]
@@ -200,7 +202,7 @@ mod tests {
             if tag != "en" {
                 assert_ne!(
                     tr(tag, "native-tray-quit"),
-                    "Quit Maximal",
+                    "Quit ModelRelay",
                     "{tag} base looks aliased to en"
                 );
             }
@@ -210,9 +212,9 @@ mod tests {
     #[test]
     fn falls_back_region_to_language_to_en() {
         // es-MX carries no native overrides → resolves to the es language base.
-        assert_eq!(tr("es-MX", "native-tray-quit"), "Salir de Maximal");
+        assert_eq!(tr("es-MX", "native-tray-quit"), "Salir de ModelRelay");
         // A key only in en resolves there from any locale.
-        assert_eq!(tr("es", "native-tooltip-idle"), "maximal");
+        assert_eq!(tr("es", "native-tooltip-idle"), "ModelRelay");
     }
 
     #[test]

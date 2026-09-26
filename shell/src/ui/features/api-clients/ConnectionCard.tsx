@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { t } from "../../../i18n";
+import type { ClientActivity } from "../../../../../src/lib/http/client-activity";
 import { Checkbox } from "../../components/Checkbox";
 import type { ApiKeyEntry } from "../../../../../src/lib/config/settings-types";
 import type { MutationResult } from "./useApiKeys";
 
 interface ConnectionCardProps {
   entry: ApiKeyEntry;
+  activity?: ClientActivity;
+  activityAvailable: boolean;
   update: (
     id: string,
     patch: { label?: string; key?: string; enabled?: boolean },
@@ -22,9 +26,13 @@ function mask(value: string): string {
 
 export function ConnectionCard({
   entry,
+  activity,
+  activityAvailable,
   update,
   onDelete,
 }: ConnectionCardProps): JSX.Element {
+  const status = activityAvailable ? activity?.status ?? "none" : "unavailable";
+  const lastFinishedAt = activityAvailable ? activity?.lastFinishedAt : null;
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState(false);
   const [editingName, setEditingName] = useState(false);
@@ -63,10 +71,7 @@ export function ConnectionCard({
     <article className="connection-card" data-key-id={entry.id}>
       <header className="connection-card__head">
         <span
-          className={
-            "connection-card__dot"
-            + (entry.enabled ? " is-active" : "")
-          }
+          className={`connection-card__dot is-${status}`}
           aria-hidden
         />
         {editingName ? (
@@ -110,6 +115,17 @@ export function ConnectionCard({
         </button>
       </header>
 
+      <div className="connection-card__activity" role="status">
+        <span className={`connection-card__status is-${status}`} data-i18n={`activity-${status}`}>
+          {t(`activity-${status}`)}
+        </span>
+        {status === "working" && <span>{t("activity-active", { n: activity?.activeRequests ?? 0 })}</span>}
+        {status !== "working" && lastFinishedAt && (
+          <time dateTime={new Date(lastFinishedAt).toISOString()}>
+            {t("activity-last", { time: new Date(lastFinishedAt).toLocaleTimeString() })}
+          </time>
+        )}
+      </div>
       <div className="connection-card__body">
         <div className="connection-card__field">
           <label className="connection-card__field-label">Connection key</label>

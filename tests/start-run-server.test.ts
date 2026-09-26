@@ -198,8 +198,10 @@ beforeEach(() => {
 
 describe("runServer — state mutation from options", () => {
   test("verbose=true sets state.verbose and bumps consola.level", async () => {
-    await runServer(baseOptions({ verbose: true }))
+    const options = baseOptions({ verbose: true })
+    await runServer(options)
     expect(state.verbose).toBe(true)
+    expect(state.localServerBaseUrl).toBe(`http://127.0.0.1:${options.port}`)
   })
 
   test("verbose=false leaves state.verbose false", async () => {
@@ -463,6 +465,7 @@ describe("start.run — citty args → runServer options", () => {
 // mocks, so we re-`mock.module` each one back to the captured real
 // module reference.
 afterAll(async () => {
+  state.localServerBaseUrl = undefined
   globalThis.fetch = realFetch
   mock.restore()
   await mock.module("~/lib/platform/paths", () => realPathsModule)

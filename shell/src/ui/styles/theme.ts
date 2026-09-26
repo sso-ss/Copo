@@ -1,6 +1,6 @@
 export const fontStacks = {
-  display: '"Fraunces", Georgia, "Times New Roman", serif',
-  body: '"Commissioner", "Segoe UI", Helvetica, Arial, sans-serif',
+  display: '"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  body: '"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   mono: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
 } as const;
 

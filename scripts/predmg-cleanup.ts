@@ -2,11 +2,11 @@
 /**
  * Pre-bundle cleanup — makes `tauri build --bundles dmg` idempotent.
  *
- * tauri's bundle_dmg.sh mounts a scratch volume at /Volumes/Maximal and writes
+ * tauri's bundle_dmg.sh mounts a scratch volume at /Volumes/ModelRelay and writes
  * a `rw.<pid>.*.dmg` working image. A run that fails partway leaves one or both
  * behind, and that debris breaks the NEXT run:
- *   - a stale /Volumes/Maximal makes macOS mount the new scratch volume as
- *     "Maximal 1", which bundle_dmg.sh can't find → the bundle step fails;
+ *   - a stale /Volumes/ModelRelay makes macOS mount the new scratch volume as
+ *     "ModelRelay 1", which bundle_dmg.sh can't find → the bundle step fails;
  *   - stale `rw.*.dmg` images accumulate until bundling trips over them.
  * Clearing both before each build removes both recurring failure modes.
  *
@@ -25,12 +25,12 @@ function run(cmd: string, args: Array<string>): void {
   spawnSync(cmd, args, { stdio: ["ignore", "ignore", "ignore"] })
 }
 
-// 1) Detach stale Maximal volumes (an opened/installed DMG, or a failed run's
-//    scratch mount). Strictly "Maximal" / "Maximal N" so no other volume is
+// 1) Detach stale ModelRelay volumes (an opened/installed DMG, or a failed run's
+//    scratch mount). Strictly "ModelRelay" / "ModelRelay N" so no other volume is
 //    touched. Detaching an installer DMG is harmless and fully reversible.
 let volumes: Array<string> = []
 try {
-  volumes = fs.readdirSync("/Volumes").filter((v) => /^Maximal( \d+)?$/.test(v))
+  volumes = fs.readdirSync("/Volumes").filter((v) => /^ModelRelay( \d+)?$/.test(v))
 } catch {
   /* /Volumes unreadable — nothing to do */
 }

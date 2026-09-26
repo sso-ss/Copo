@@ -132,7 +132,7 @@ describe("DiagnosticsResponse schema round-trip", () => {
       version: "0.1.0",
       source_revision: "a123fc0",
       source_branch: "main",
-      launch_path: "/Applications/Maximal.app/Contents/MacOS/maximal",
+      launch_path: "/Applications/ModelRelay.app/Contents/MacOS/maximal",
       launch_kind: "dmg-app" as const,
       pid: 12345,
       uptime_ms: 60_000,

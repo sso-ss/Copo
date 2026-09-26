@@ -14,6 +14,9 @@ const modelsCache = new SingletonCache<ModelsResponse>({ name: "models" })
 const copilotTokenCache = new SingletonCache<string>({ name: "copilot_token" })
 
 export interface State {
+  /** Loopback endpoint of this running instance, set before app reconciliation. */
+  localServerBaseUrl?: string
+
   githubToken?: string
   userName?: string
   copilotToken?: string

@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@stuffbucket/maximal",
+      "name": "@sso-ss/modelrelay",
       "dependencies": {
         "citty": "^0.1.6",
         "clipboardy": "^5.0.0",

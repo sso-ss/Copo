@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@stuffbucket/maximal",
-  "version": "0.4.44",
+  "name": "@sso-ss/modelrelay",
+  "version": "0.1.0",
   "description": "Local proxy that exposes GitHub Copilot as OpenAI- and Anthropic-compatible HTTP endpoints.",
   "keywords": [
     "proxy",
@@ -9,11 +9,11 @@
     "openai-compatible",
     "anthropic-compatible"
   ],
-  "homepage": "https://github.com/stuffbucket/maximal",
-  "bugs": "https://github.com/stuffbucket/maximal/issues",
+  "homepage": "https://github.com/sso-ss/ModelRelay",
+  "bugs": "https://github.com/sso-ss/ModelRelay/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/stuffbucket/maximal"
+    "url": "https://github.com/sso-ss/ModelRelay"
   },
   "license": "MIT",
   "author": "stuffbucket",

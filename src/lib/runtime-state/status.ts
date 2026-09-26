@@ -4,12 +4,12 @@
  *
  * Schema shape (deliberately layered so it grows without churn):
  *
- *   - TOP LEVEL is "Maximal, all up": the fields that describe the proxy
+ *   - TOP LEVEL is "ModelRelay, all up": the fields that describe the proxy
  *     process itself. The mere presence of a well-formed response (with
  *     `service: "maximal"`) is the identity signal — that's what the
  *     Claude Code shim keys off, and it's stable forever.
  *
- *   - `subsystems` namespaces everything else by the part of Maximal it
+ *   - `subsystems` namespaces everything else by the part of ModelRelay it
  *     describes. Each subsystem is its own object. As we add subsystems
  *     (more providers, the shell, background jobs, …) they get a new key
  *     here — callers that don't know about them simply ignore the key,

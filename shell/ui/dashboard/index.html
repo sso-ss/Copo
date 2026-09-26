@@ -3,19 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Maximal — Dashboard</title>
+    <title>ModelRelay — Dashboard</title>
     <link
       rel="icon"
       type="image/svg+xml"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23c8334a'/%3E%3Ctext x='50%25' y='54%25' dy='.35em' text-anchor='middle' font-family='Georgia,serif' font-style='italic' font-size='42' font-weight='700' fill='%23fafafa'%3Em%3C/text%3E%3C/svg%3E"
     />
 
-    <!-- Commissioner is the body face, matching the Settings window.
-         The Dashboard has no display heading (the native titlebar
-         carries the page name), so Fraunces is intentionally absent —
-         "Fraunces rationed" per .design-context.md. The @font-face rules
-         in style.css self-host it from ./vendor/fonts/ — no CDN request,
-         works offline / under a strict CSP. -->
+    <!-- Pretendard is self-hosted in ./vendor/fonts/ for offline use. -->
 
     <!-- Tailwind + Lucide are CLASSIC global <script>s, not module imports —
          the bundled entry references window.lucide / window.tailwind as
@@ -34,7 +29,7 @@
   <body class="antialiased">
     <div id="app" class="min-h-screen p-4 sm:p-6">
       <div class="max-w-7xl mx-auto">
-        <!-- Native macOS titlebar already reads "Maximal — Dashboard";
+        <!-- Native macOS titlebar already reads "ModelRelay — Dashboard";
              no in-window duplicate. Content starts at the control row. -->
 
         <!-- Period selector. Data refreshes automatically — Tauri

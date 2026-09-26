@@ -1,3 +1,4 @@
+import type { ClientActivity } from "../../../src/lib/http/client-activity";
 import { getShellApiKey } from "../tauri/shell";
 
 /**
@@ -210,6 +211,11 @@ type Endpoint =
       body: { key: string }
     }
   | {
+      kind: "client-activity"
+      method: "GET"
+      path: "/settings/api/clients/activity"
+    }
+  | {
       kind: "api-keys-list"
       method: "GET"
       path: "/settings/api/api-keys"
@@ -296,6 +302,7 @@ interface ResponseFor {
   "accounts-list": AccountsListResponse
   "accounts-switch": AccountSwitchResponse
   "accounts-remove": AccountRemoveResponse
+  "client-activity": { activity: Array<ClientActivity> }
   "api-keys-list": ApiKeysListResponse
   "api-keys-create": ApiKeyEntry
   "api-keys-update": ApiKeyEntry

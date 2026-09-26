@@ -204,7 +204,7 @@ a:hover {
 .section__title {
   /* Window-level display heading. Per design-context, Fraunces appears
      in the brand mark AND "one display heading per window" — this is
-     the one. Body copy + entity titles stay in Commissioner so the
+     the one. Body copy + entity titles use Pretendard so the
      humanist accent stays rationed. */
   margin: 0;
   font-family: var(--font-display);
@@ -439,7 +439,7 @@ a:hover {
    A first-launch signal that this app needs a GitHub Copilot
    subscription to function. Sits above the body copy in the
    unauthenticated state. Brand-tinted so the requirement reads as
-   identity-level (this is what Maximal IS), not as an error or a
+   identity-level (this is what ModelRelay IS), not as an error or a
    warning. Restrained: brand stripe + icon + tight copy, on the
    card surface — not a full brand fill, which would shout. */
 .requirement-callout {
@@ -1431,7 +1431,7 @@ a:hover {
 
 /* ---- API clients: connection-card pattern ----
    Designed for non-technical users (e.g. designers). Each app that
-   talks to Maximal is a card; the friendly name leads, the technical
+   talks to ModelRelay is a card; the friendly name leads, the technical
    key is secondary (masked + show/copy). The wildcard is hidden in
    an Advanced disclosure below. No tables, no inline cell edits
    except the connection's display name. */
@@ -1549,7 +1549,7 @@ a:hover {
   flex: 0 0 auto;
 }
 
-.connection-card__dot.is-active {
+.connection-card__dot.is-working {
   background: var(--accent);
 }
 
@@ -2010,3 +2010,19 @@ a:hover {
   line-height: var(--leading-lg);
   color: var(--text-muted);
 }
+
+
+.connection-card__activity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.connection-card__status { font-weight: var(--weight-md); }
+.connection-card__status.is-working { color: var(--accent); }
+.connection-card__status.is-finished { color: var(--status-success-fg); }
+.connection-card__status.is-stopped { color: var(--status-warning); }
+.connection-card__dot.is-finished { background: var(--status-success-fg); }
+.connection-card__dot.is-stopped { background: var(--status-warning); }

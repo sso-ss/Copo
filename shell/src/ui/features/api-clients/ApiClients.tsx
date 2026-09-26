@@ -8,6 +8,8 @@ import type { ApiKeyEntry } from "../../../../../src/lib/config/settings-types";
 import { AddConnection } from "./AddConnection";
 import { AdvancedSection } from "./AdvancedSection";
 import { ConnectionCard } from "./ConnectionCard";
+import { t } from "../../../i18n";
+import { useClientActivity } from "./useClientActivity";
 import { useApiKeys } from "./useApiKeys";
 
 export function ApiClients(): JSX.Element {
@@ -22,6 +24,8 @@ export function ApiClients(): JSX.Element {
     remove,
     setEnforce,
   } = useApiKeys();
+
+  const activity = useClientActivity();
 
   const [adding, setAdding] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<ApiKeyEntry | null>(null);
@@ -49,11 +53,14 @@ export function ApiClients(): JSX.Element {
         </p>
       )}
 
+      <p className="state__caption" data-i18n="activity-hint">{t("activity-hint")}</p>
       <Stack proximity="section" className="connection-list">
         {entries.map((entry) => (
           <ConnectionCard
             key={entry.id}
             entry={entry}
+            activity={activity?.[entry.id]}
+            activityAvailable={activity !== null}
             update={update}
             onDelete={() => setPendingDelete(entry)}
           />

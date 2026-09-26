@@ -21,6 +21,8 @@ import {
   isConfigLibraryApplied,
   revertConfigLibraryProfile,
 } from "~/apps/claude-desktop/config"
+import { getConfig, writeConfig } from "~/lib/config/config"
+import { state } from "~/lib/runtime-state/state"
 
 let home: string
 
@@ -224,4 +226,35 @@ describe("generateManagedProfile", () => {
     expect(mc).toContain("<string>AAAA-PROFILE</string>")
     expect(mc).toContain("<string>BBBB-PAYLOAD</string>")
   })
+})
+
+it("uses this instance's port and the dedicated Desktop key", () => {
+  const priorUrl = state.localServerBaseUrl
+  const priorConfig = getConfig()
+  try {
+    state.localServerBaseUrl = "http://127.0.0.1:4142"
+    writeConfig({
+      ...priorConfig,
+      auth: {
+        apiKeyEntries: [
+          {
+            id: "desktop-test",
+            label: "Claude Desktop",
+            key: "desktop-test-key",
+            enabled: true,
+            created_at: new Date().toISOString(),
+          },
+        ],
+      },
+    })
+    const result = applyConfigLibraryProfile(home)
+    const profile = readJson(path.join(libDir(), `${result.profileId}.json`))
+    expect(profile.inferenceGatewayBaseUrl).toBe("http://127.0.0.1:4142")
+    expect(profile.inferenceGatewayApiKey).toBe("desktop-test-key")
+    expect(isConfigLibraryApplied(home)).toBe(true)
+    expect(applyConfigLibraryProfile(home).wrote).toBe(false)
+  } finally {
+    state.localServerBaseUrl = priorUrl
+    writeConfig(priorConfig)
+  }
 })

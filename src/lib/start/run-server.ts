@@ -148,7 +148,7 @@ export async function runServer(options: RunServerOptions): Promise<void> {
   }
 
   // First-launch CLI shim (macOS .dmg only). The .app bundle's CLI
-  // lives at …/Maximal.app/Contents/MacOS/maximal, off every default
+  // lives at …/ModelRelay.app/Contents/MacOS/maximal, off every default
   // PATH; symlink it into ~/.local/bin so `maximal` works in a
   // terminal. Idempotent + best-effort — never blocks boot. No-op for
   // Homebrew/dev launches (not an .app bundle). See lib/cli-path.ts.
@@ -205,6 +205,10 @@ export async function runServer(options: RunServerOptions): Promise<void> {
       idleTimeout: 0,
     },
   })
+
+  // runServer runs once per process; no concurrent startup writes this field.
+  // eslint-disable-next-line require-atomic-updates
+  state.localServerBaseUrl = `http://127.0.0.1:${options.port}`
 
   // Best-effort: record our PID so a future `maximal start --replace`
   // can fall back to SIGTERM/SIGKILL if the graceful shutdown route

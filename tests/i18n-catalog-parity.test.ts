@@ -43,6 +43,7 @@ const OVERRIDE_LOCALES = [
   "ja",
   "it",
   "pt",
+  "ko",
 ] as const
 const FULL_COVERAGE_LOCALES = new Set([
   "es",
@@ -53,6 +54,7 @@ const FULL_COVERAGE_LOCALES = new Set([
   "ja",
   "it",
   "pt",
+  "ko",
 ])
 
 function loadLocale(tag: string): Record<string, string> {

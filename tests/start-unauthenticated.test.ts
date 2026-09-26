@@ -98,7 +98,7 @@ describe("start in unauthenticated mode", () => {
   })
 
   test("GET /status returns the maximal identity marker, no auth needed", async () => {
-    // The Claude Code shim probes this to confirm :4141 is really Maximal
+    // The Claude Code shim probes this to confirm :4141 is really ModelRelay
     // (vs some other process that grabbed the port). Must work with no API
     // key and even with a bogus one.
     const headerCases: Array<Record<string, string>> = [
@@ -122,7 +122,7 @@ describe("start in unauthenticated mode", () => {
           models: { cached: number }
         }
       }
-      // Top level = "Maximal, all up" — the identity + liveness signal.
+      // Top level = "ModelRelay, all up" — the identity + liveness signal.
       expect(body.service).toBe("maximal")
       expect(body.status).toBe("ok")
       expect(typeof body.version).toBe("string")

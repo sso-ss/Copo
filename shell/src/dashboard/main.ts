@@ -1,4 +1,4 @@
-// Maximal — Dashboard client script (bundled TS entry).
+// ModelRelay — Dashboard client script (bundled TS entry).
 //
 // Loaded as an ES module with `defer` semantics (Bun bundles this into
 // shell/dist/ui/dashboard/main.js; Tailwind + Lucide stay CLASSIC <script>

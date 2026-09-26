@@ -157,7 +157,7 @@ export function AppCard({
               disabled={toggling}
               onClick={() => void toggle(false)}
             >
-              Remove Maximal settings
+              Remove ModelRelay settings
             </Button>
           )}
         </div>

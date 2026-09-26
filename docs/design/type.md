@@ -1,9 +1,8 @@
 # Type system
 
-**Pairing: Fraunces (display) + Commissioner (body).** Humanist
-editorial pair. Fraunces is already in the brand mark, so the
-display tier and the icon share a typographic family. Commissioner
-is the workhorse humanist sans for everything else.
+**Interface font: Pretendard Variable.** Used for body text and headings,
+with Latin and Korean glyphs bundled locally. The outlined brand wordmark
+keeps its existing artwork.
 
 **Ramp: 16px base, 1.2 ratio.** Always reference token names —
 never inline raw pixel/rem values in components. Values live in
@@ -89,7 +88,6 @@ values so columns don't dance.
 
 ## Font loading
 
-Both Fraunces and Commissioner are on Google Fonts. **Production:
-self-host.** The Tauri shell ships WOFF2 files bundled with the Vite
-output so the webview never makes an external request — keeps the
-app working offline and preserves the no-telemetry posture.
+Pretendard Variable is self-hosted under each UI surface’s `vendor/fonts/`
+directory, with its SIL Open Font License. The splash loads the same bundled
+font from the settings assets. No external font request is needed.

@@ -14,6 +14,7 @@ import {
   resolveApiKey,
 } from "~/lib/auth/api-key-helper"
 import { atomicWriteJson } from "~/lib/platform/atomic-json"
+import { state } from "~/lib/runtime-state/state"
 
 /** The label Claude Code attributes its key under (Settings → API clients). */
 export const HELPER_LABEL = "claude-code"
@@ -108,7 +109,9 @@ export function getBaseUrlOwnership(
 ): BaseUrlOwnership {
   const env = readEnv(settings)
   if (!(BASE_URL_KEY in env)) return "absent"
-  return env[BASE_URL_KEY] === PROXY_BASE_URL ? "ours" : "foreign"
+  return env[BASE_URL_KEY] === (state.localServerBaseUrl ?? PROXY_BASE_URL) ?
+      "ours"
+    : "foreign"
 }
 
 export type ApiKeyHelperOwnership = "ours" | "foreign" | "absent"
@@ -166,7 +169,7 @@ export function mergeBaseUrl(
   const addsAutoModeSetting = !(AUTO_MODE_SERVER_KEY in existingEnv)
   const env = {
     ...existingEnv,
-    [BASE_URL_KEY]: PROXY_BASE_URL,
+    [BASE_URL_KEY]: state.localServerBaseUrl ?? PROXY_BASE_URL,
     ...(addsAutoModeSetting ?
       { [AUTO_MODE_SERVER_KEY]: AUTO_MODE_SERVER_DISABLED }
     : {}),

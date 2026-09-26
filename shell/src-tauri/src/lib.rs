@@ -1,4 +1,4 @@
-// Maximal tray + sidecar shell.
+// ModelRelay tray + sidecar shell.
 //
 // Tauri 2 menu-bar app. On launch we:
 //   1. Mark state Starting and install the tray immediately — the
@@ -34,7 +34,7 @@
 // is the single point of truth and is called from every show/hide path.
 //
 // Quit flow:
-//   1. Tray "Quit Maximal" fires `menu_id::QUIT`.
+//   1. Tray "Quit ModelRelay" fires `menu_id::QUIT`.
 //   2. `request_quit` pops a native confirm via tauri-plugin-dialog.
 //      No webview involvement, no JS, no event-emit/listen race.
 //   3. On accept → `app.exit(0)` → RunEvent::ExitRequested →
@@ -61,7 +61,7 @@ use tauri_plugin_shell::ShellExt;
 /// backed by the same shell/src/i18n/*.json catalogs the webview renders with.
 mod native_i18n;
 
-// Canonical Maximal port. Apps integrating with the proxy (Claude
+// Canonical ModelRelay port. Apps integrating with the proxy (Claude
 // Code, Cursor, custom scripts) only need to know this one URL:
 // http://localhost:4141. The Tauri shell and the standalone CLI both
 // bind here; the shell passes `--replace` when spawning so it always
@@ -704,7 +704,7 @@ pub fn run() {
             kill_sidecar(app_handle);
         }
         // macOS delivers Reopen when the app is re-activated — clicking its
-        // notification banner ("Maximal is running"), its Dock icon, etc.
+        // notification banner ("ModelRelay is running"), its Dock icon, etc.
         // Desktop notifications can't carry a routable button (the plugin's
         // show() is fire-and-forget), so Reopen is how a banner click lands
         // somewhere: if nothing's on screen, open Settings. Route to the
@@ -1451,7 +1451,7 @@ fn create_splash(app: &AppHandle) {
         "splash",
         WebviewUrl::App("splash.html".into()),
     )
-    .title("Maximal")
+    .title("ModelRelay")
     // Hand the splash its version before first paint (race-free — runs
     // ahead of page load, unlike an emitted event the page might miss).
     // The page renders it unless it's the dev `0.0.0` placeholder.
@@ -2105,7 +2105,7 @@ fn do_reveal_config_dir(app: &AppHandle) {
 /// Path to the persisted locale file — a one-line BCP-47 tag written by the
 /// `set_locale` command. Lives beside the sidecar's data so it survives
 /// restarts and, crucially, is readable BEFORE any webview loads: the
-/// first-launch "Maximal is running" banner needs a locale before the picker
+/// first-launch "ModelRelay is running" banner needs a locale before the picker
 /// has ever run this session, and the last explicit choice beats the OS locale.
 fn locale_file(app: &AppHandle) -> Option<std::path::PathBuf> {
     maximal_data_dir(app).map(|d| d.join("locale"))
@@ -2303,7 +2303,7 @@ fn update_activation_policy(app: &AppHandle) {
 #[cfg(not(target_os = "macos"))]
 fn update_activation_policy(_app: &AppHandle) {}
 
-/// macOS: make Maximal the active (frontmost) application. An Accessory
+/// macOS: make ModelRelay the active (frontmost) application. An Accessory
 /// menu-bar app is not active by default, so even after flipping to Regular
 /// a freshly-shown window won't take the foreground until the app itself is
 /// activated — that's the "had to click the Dock icon" symptom. No-op off
@@ -2359,7 +2359,7 @@ fn present_window(app: &AppHandle, window: &tauri::WebviewWindow) {
     }
 }
 
-/// Entry point for the tray's "Quit Maximal" item. Pops a native
+/// Entry point for the tray's "Quit ModelRelay" item. Pops a native
 /// confirm dialog via `tauri-plugin-dialog`; on accept, calls
 /// `app.exit(0)` which routes through `RunEvent::ExitRequested` →
 /// `kill_sidecar` (graceful SIGTERM + 3s SIGKILL escalation).
@@ -2408,7 +2408,7 @@ fn graceful_shutdown(app: &AppHandle) {
 /// Focus an existing main window, or open Settings if none exists.
 ///
 /// Called from the single-instance plugin callback when the user
-/// re-launches Maximal without `--replace` — the natural "they double-
+/// re-launches ModelRelay without `--replace` — the natural "they double-
 /// clicked the dock icon" case. Settings is the default surface;
 /// Dashboard is the fallback if Settings isn't built yet but
 /// Dashboard is. If neither exists we open Settings fresh, which
@@ -2484,7 +2484,7 @@ fn restart_sidecar(app: AppHandle) {
 /// likewise mandatory: the running `.app` can't delete the bundle it's
 /// executing from, so the CLI removes the launchd agent, the
 /// `~/.local/bin/maximal` PATH symlink, and the other PATH binaries, then the
-/// user drags Maximal to the Trash to finish. Returns `Err(String)` (a
+/// user drags ModelRelay to the Trash to finish. Returns `Err(String)` (a
 /// human-readable reason) on a missing binary or non-zero exit so the webview
 /// can surface a non-blocking inline error instead of silently stranding the
 /// user. Mirrors the spawn+`.output()` shape of `reconcile_claude_code_revert`.

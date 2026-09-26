@@ -17,6 +17,7 @@ import {
   writeClaudeCodeSettings,
 } from "~/apps/claude-code/config"
 import { getConfig, writeConfig } from "~/lib/config/config"
+import { state } from "~/lib/runtime-state/state"
 
 const TEST_KEY = "custom-user-key"
 const TEST_HELPER = "echo 'custom-user-key'"
@@ -522,7 +523,7 @@ describe("applyProxyBaseUrl (end-to-end continued)", () => {
     ],
     [
       "application bundle",
-      '"/Applications/Maximal.app/Contents/MacOS/maximal" api claude-code',
+      '"/Applications/ModelRelay.app/Contents/MacOS/maximal" api claude-code',
     ],
     [
       "runtime",
@@ -849,5 +850,35 @@ describe("isProxyBaseUrlConfigured", () => {
       }),
     )
     expect(isProxyBaseUrlConfigured(settingsPath)).toBe(true)
+  })
+})
+
+describe("custom server port", () => {
+  const savedBaseUrl = state.localServerBaseUrl
+
+  afterEach(() => {
+    state.localServerBaseUrl = savedBaseUrl
+  })
+
+  it("enables, recognizes, and restores routing on port 4142", () => {
+    state.localServerBaseUrl = "http://127.0.0.1:4142"
+    const original = { model: "test-model", env: { KEEP: "yes" } }
+    writeClaudeCodeSettings(settingsPath, original)
+    expect(apply().wrote).toBe(true)
+    expect(envOf(read()).ANTHROPIC_BASE_URL).toBe(state.localServerBaseUrl)
+    expect(isProxyBaseUrlConfigured(settingsPath)).toBe(true)
+    expect(apply().skippedReason).toBe("already-ours")
+    expect(revertProxyBaseUrl(settingsPath).wrote).toBe(true)
+    expect(read()).toEqual(original)
+  })
+
+  it("preserves routing to another running instance", () => {
+    state.localServerBaseUrl = "http://127.0.0.1:4142"
+    const original = { env: { ANTHROPIC_BASE_URL: PROXY_BASE_URL } }
+    writeClaudeCodeSettings(settingsPath, original)
+    expect(apply().skippedReason).toBe("foreign-base-url")
+    expect(isProxyBaseUrlConfigured(settingsPath)).toBe(false)
+    expect(revertProxyBaseUrl(settingsPath).wrote).toBe(false)
+    expect(read()).toEqual(original)
   })
 })

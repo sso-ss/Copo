@@ -113,7 +113,7 @@ describe("getUpdateStatus", () => {
     expect(status.update_available).toBe(true)
     // Install-channel-neutral download page, never a raw asset.
     expect(status.url).toBe(DOWNLOAD_URL)
-    expect(DOWNLOAD_URL).toBe("https://mxml.sh/")
+    expect(DOWNLOAD_URL).toBe("https://github.com/sso-ss/ModelRelay/releases")
   })
 
   test("reports up to date when the latest tag is not newer", async () => {
@@ -224,10 +224,10 @@ describe("getUpdateStatus", () => {
 
     await getUpdateStatus()
 
-    // mxml.sh directly — now a Fastly-backed GitHub Pages custom domain (not the
-    // old Caddy proxy), so it's the CDN origin: fewest hops + smallest trust
-    // surface for a machine poll.
-    expect(requested).toBe("https://mxml.sh/updates/manifest.json")
+    // The fork's manifest must never offer an upstream Maximal release.
+    expect(requested).toBe(
+      "https://raw.githubusercontent.com/sso-ss/ModelRelay/main/site/public/updates/modelrelay.json",
+    )
     // Never the retired /maximal Caddy path…
     expect(requested).not.toContain("/maximal/")
     // …and never the rate-limited REST API.

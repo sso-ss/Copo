@@ -4,6 +4,10 @@ import consola from "consola"
 
 import { getConfig, type AppConfig } from "~/lib/config/config"
 import { recordClient } from "~/lib/http/active-clients"
+import {
+  isInferenceRequest,
+  trackClientRequest,
+} from "~/lib/http/track-client-request"
 import { hasGithubToken, state } from "~/lib/runtime-state/state"
 
 interface AuthMiddlewareOptions {
@@ -223,7 +227,7 @@ export function createAuthMiddleware(
       && state.shellApiKey
       && requestApiKey === state.shellApiKey
     ) {
-      return { allow: true, id: null, label: "Maximal Settings" }
+      return { allow: true, id: null, label: "ModelRelay Settings" }
     }
     if (!isEnforcing()) {
       const entry = requestApiKey ? findApiKeyEntry(requestApiKey) : null
@@ -245,6 +249,9 @@ export function createAuthMiddleware(
       apiKeyLabel: decision.label,
       userAgent: c.req.header("user-agent") ?? "",
     })
+    if (decision.id && isInferenceRequest(c.req.method, c.req.path)) {
+      return trackClientRequest(c, next, decision.id)
+    }
     return next()
   }
 }

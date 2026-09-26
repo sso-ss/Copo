@@ -98,8 +98,8 @@ async function copyShellChrome(): Promise<void> {
   await cp(join(SHELL_DIR, "splash.html"), join(DIST_ROOT, "splash.html"))
   await Bun.write(
     join(DIST_ROOT, "index.html"),
-    "<!doctype html><meta charset=utf-8><title>Maximal</title>"
-      + "<p>Maximal is running. Open Settings from the menu-bar icon.</p>\n",
+    "<!doctype html><meta charset=utf-8><title>ModelRelay</title>"
+      + "<p>ModelRelay is running. Open Settings from the menu-bar icon.</p>\n",
   )
 }
 

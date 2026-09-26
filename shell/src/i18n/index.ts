@@ -47,6 +47,7 @@ import ru from "./ru.json";
 import ja from "./ja.json";
 import it from "./it.json";
 import pt from "./pt.json";
+import ko from "./ko.json";
 
 type Catalog = Record<string, string>;
 
@@ -69,6 +70,7 @@ const CATALOGS: Record<string, Catalog> = {
   ja,
   it,
   pt,
+  ko,
 };
 
 /** Human labels for the picker, keyed by locale tag. */
@@ -85,6 +87,7 @@ const LOCALE_LABELS: Record<string, string> = {
   ja: "日本語",
   it: "Italiano",
   pt: "Português",
+  ko: "한국어",
 };
 
 /** localStorage key holding the user's explicit locale override, if any. */

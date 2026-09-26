@@ -18,7 +18,7 @@ import {
   isAppBundlePath,
 } from "~/lib/platform/cli-path"
 
-const APP_EXEC = "/Applications/Maximal.app/Contents/MacOS/maximal"
+const APP_EXEC = "/Applications/ModelRelay.app/Contents/MacOS/maximal"
 
 let dir: string
 
@@ -135,7 +135,7 @@ describe("ensureCliSymlink", () => {
     const bin = path.join(dir, ".local", "bin")
     fs.mkdirSync(bin, { recursive: true })
     const link = path.join(bin, "maximal")
-    fs.symlinkSync("/old/Maximal.app/Contents/MacOS/maximal", link)
+    fs.symlinkSync("/old/ModelRelay.app/Contents/MacOS/maximal", link)
     const r = ensureCliSymlink({
       execPath: APP_EXEC,
       home: dir,

@@ -93,7 +93,7 @@ function createCodexApp(
         model = configuredModel(text)
         if (hasUnmanagedProvider(text)) {
           notice =
-            "Your existing Codex setup already routes through Maximal. This switch uses separate managed settings; switching it off restores your existing setup."
+            "Your existing Codex setup already routes through ModelRelay. This switch uses separate managed settings; switching it off restores your existing setup."
         }
       } catch (error) {
         notice =
@@ -134,7 +134,7 @@ function createCodexApp(
         const models = availableModels()
         if (models.length > 0 && !models.includes(model)) {
           throw new Error(
-            "Your configured Codex model is not available through Maximal's Responses API. Set a supported model in your Codex configuration, then try again.",
+            "Your configured Codex model is not available through ModelRelay's Responses API. Set a supported model in your Codex configuration, then try again.",
           )
         }
         const after = prepareCodexConfig(

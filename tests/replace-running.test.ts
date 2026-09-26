@@ -15,7 +15,7 @@ describe("looksLikeMaximalCommand (the kill-no-stranger guard)", () => {
   test.each([
     ["/Users/brian/.local/bin/maximal start --port 4141", true],
     [
-      "/Applications/Maximal.app/Contents/MacOS/maximal start --replace --port 4141",
+      "/Applications/ModelRelay.app/Contents/MacOS/maximal start --replace --port 4141",
       true,
     ],
     ["/opt/homebrew/bin/maximal", true],
@@ -29,7 +29,7 @@ describe("looksLikeMaximalCommand (the kill-no-stranger guard)", () => {
 
   test.each([
     // The menu-bar app — killing it would be wrong.
-    ["/Applications/Maximal.app/Contents/MacOS/maximal-shell", false],
+    ["/Applications/ModelRelay.app/Contents/MacOS/maximal-shell", false],
     // Unrelated processes that merely contain the substring.
     ["/usr/bin/maximalist-editor", false],
     ["node /some/maximalism/server.js", false],

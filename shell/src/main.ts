@@ -200,7 +200,7 @@ function monoCode(text: string): HTMLElement {
   return code;
 }
 
-/** "Maximal forwards requests … {plansLink}." with a live "See plans" link. */
+/** "ModelRelay forwards requests … {plansLink}." with a live "See plans" link. */
 function renderRequirementCallout(): void {
   const el = document.querySelector<HTMLElement>('[data-field="requirement_sub"]');
   fillWithNode(
@@ -336,7 +336,7 @@ function setUninstallError(message: string | null): void {
   row.hidden = false;
 }
 
-/** Wire the in-app "Uninstall Maximal…" button. Reads the two option
+/** Wire the in-app "Uninstall ModelRelay…" button. Reads the two option
  *  checkboxes in the card (not the dialog — neither window.confirm nor the
  *  native dialog supports in-dialog checkboxes), summarizes the choices into a
  *  confirm prompt, then runs the privileged `uninstall_maximal` command.

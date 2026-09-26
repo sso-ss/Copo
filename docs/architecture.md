@@ -120,6 +120,20 @@ ownership, profile precedence, and verification behavior.
 
 `shell/` is a Tauri 2 menu-bar app that wraps the proxy for non-CLI users. `bun run app:sidecar` builds the UI (`bun run build:ui`), regenerates the embed manifest, and compiles the standalone proxy binary into `shell/src-tauri/binaries/`. Tauri launches it as a sidecar bound to `127.0.0.1:4141`. The settings (React, Bun-bundled) and dashboard (vanilla) UIs live in `shell/ui/{settings,dashboard}` and are **embedded in the sidecar binary**, served by the proxy at `/ui/settings` and `/ui/dashboard` (`src/routes/ui/route.ts`) — from `shell/dist` on disk in dev, from `$bunfs` in the compiled binary. The webview windows point at those `/ui/*` URLs; legacy `/settings` and `/usage-viewer` 301-redirect to them. No Vite — Bun is the bundler.
 
+## Connection activity
+
+Settings → API keys shows live inference activity for each named key. The auth
+middleware tracks POST requests to Messages, Responses, Chat Completions, and
+Embeddings; discovery, token counting, and settings polling do not count.
+`GET /settings/api/clients/activity` returns the in-memory status and active
+request count without keys or message contents. The UI polls every two seconds.
+
+Streaming responses remain working until consumed to the end. SSE completion
+markers distinguish finished responses from truncated streams; HTTP errors,
+stream errors, and cancellation are stopped. Concurrent requests keep the key
+working until all have ended. History resets on restart and is bounded; these
+are request states, not app-process health or whole-agent task completion.
+
 ## Token counting
 
 `/v1/messages/count_tokens`: when `anthropicApiKey` is configured, forwards Claude model requests to Anthropic's free `/v1/messages/count_tokens` endpoint for exact counts. Otherwise falls back to GPT `o200k_base` tokenizer with 1.15x multiplier (`src/lib/models/tokenizer.ts`).

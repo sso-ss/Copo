@@ -1,7 +1,7 @@
 /**
  * Tracks which clients have hit the proxy recently.
  *
- * Used by the menu-bar shell to show "N apps are using Maximal" at
+ * Used by the menu-bar shell to show "N apps are using ModelRelay" at
  * quit time. Lives entirely in memory: every successful auth check
  * records `(apiKeyId, userAgent)` with a `lastSeenAt` timestamp; the
  * read side filters by age window.

@@ -3,8 +3,8 @@
 
 :root {
   /* ---- Font stacks ---- */
-  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
-  --font-body: "Commissioner", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-display: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
   /* ---- Type ramp ---- */

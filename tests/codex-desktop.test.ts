@@ -88,7 +88,7 @@ describe("shared Codex routing restoration", () => {
   const original =
     '# My settings\nmodel = "test-model"\nmodel_provider = "personal"\n\n[model_providers.personal]\nname = "Personal"\nbase_url = "http://localhost:9876/v1"\n'
   const provider =
-    '[model_providers."maximal-app"]\nname = "Maximal"\nbase_url = "http://127.0.0.1:4141/v1"\nwire_api = "responses"\n'
+    '[model_providers."maximal-app"]\nname = "ModelRelay"\nbase_url = "http://127.0.0.1:4141/v1"\nwire_api = "responses"\n'
 
   test("enabling again from either client preserves the original restore point", () => {
     const enabled = prepareCodexConfig(original, provider, "test-model")

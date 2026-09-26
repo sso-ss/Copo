@@ -12,16 +12,16 @@
   <string>first-launch</string>
 
   <key>CFBundleIdentifier</key>
-  <string>co.stuffbucket.maximal</string>
+  <string>com.sso-ss.modelrelay</string>
 
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
 
   <key>CFBundleName</key>
-  <string>maximal</string>
+  <string>ModelRelay</string>
 
   <key>CFBundleDisplayName</key>
-  <string>maximal</string>
+  <string>ModelRelay</string>
 
   <key>CFBundlePackageType</key>
   <string>APPL</string>

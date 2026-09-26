@@ -8,7 +8,9 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 
+import { resolveApiKey } from "~/lib/auth/api-key-helper"
 import { atomicWriteJson as atomicWriteJsonShared } from "~/lib/platform/atomic-json"
+import { state } from "~/lib/runtime-state/state"
 
 const USERDATA_3P_SUFFIX = "-3p"
 
@@ -35,12 +37,13 @@ export interface GatewayProfileValues {
 
 export function gatewayProfile(
   home: string = os.homedir(),
-  baseUrl = "http://127.0.0.1:4141",
+  baseUrl = state.localServerBaseUrl ?? "http://127.0.0.1:4141",
 ): GatewayProfileValues {
+  const apiKey = resolveApiKey("claude-desktop")
   return {
     inferenceProvider: "gateway",
     inferenceGatewayBaseUrl: baseUrl,
-    inferenceGatewayApiKey: "anything",
+    inferenceGatewayApiKey: apiKey.ok ? apiKey.key : "anything",
     inferenceGatewayAuthScheme: "bearer",
     disableDeploymentModeChooser: true,
     coworkEgressAllowedHosts: ["*"],

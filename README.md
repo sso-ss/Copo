@@ -1,4 +1,6 @@
-# maximal
+# ModelRelay
+
+ModelRelay 0.1.0 is a fork of [Maximal](https://github.com/stuffbucket/maximal), with Codex CLI and Desktop routing. The existing `maximal` command, routing identifiers, and data directory are retained for compatibility.
 
 Local proxy that lets Anthropic-API and OpenAI-API clients (Claude Code,
 Claude Desktop in Cowork mode, Codex, etc.) talk to GitHub Copilot's

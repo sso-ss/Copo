@@ -39,7 +39,7 @@ describe("apiKeyHelperCommand", () => {
   // An explicit execPath keeps these deterministic (the default is the test
   // runner's binary). The command embeds the ABSOLUTE path, double-quoted, so a
   // GUI-launched client with a minimal PATH can still find maximal.
-  const BIN = "/Applications/Maximal.app/Contents/MacOS/maximal"
+  const BIN = "/Applications/ModelRelay.app/Contents/MacOS/maximal"
 
   test("includes the trimmed label when one is given", () => {
     expect(apiKeyHelperCommand("claude-code", BIN)).toBe(
@@ -55,7 +55,7 @@ describe("apiKeyHelperCommand", () => {
   })
 
   test("quotes a path containing spaces so sh/cmd treat it as one token", () => {
-    const spaced = "/Users/x/My Apps/Maximal.app/Contents/MacOS/maximal"
+    const spaced = "/Users/x/My Apps/ModelRelay.app/Contents/MacOS/maximal"
     expect(apiKeyHelperCommand("claude-code", spaced)).toBe(
       `"${spaced}" api claude-code`,
     )
@@ -88,7 +88,7 @@ describe("isOwnedApiKeyHelper", () => {
   test("recognizes the current `api <label>` form regardless of binary path", () => {
     expect(
       isOwnedApiKeyHelper(
-        '"/Applications/Maximal.app/Contents/MacOS/maximal" api claude-code',
+        '"/Applications/ModelRelay.app/Contents/MacOS/maximal" api claude-code',
         "claude-code",
       ),
     ).toBe(true)
@@ -130,7 +130,7 @@ describe("isOwnedApiKeyHelper", () => {
     // rewrites it to the current `api <label>` form rather than orphaning it.
     expect(
       isOwnedApiKeyHelper(
-        '"/Applications/Maximal.app/Contents/MacOS/maximal" --apiKeyHelper claude-code',
+        '"/Applications/ModelRelay.app/Contents/MacOS/maximal" --apiKeyHelper claude-code',
         "claude-code",
       ),
     ).toBe(true)

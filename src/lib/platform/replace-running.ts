@@ -77,7 +77,7 @@ async function defaultReadPidfile(): Promise<number | null> {
  * line, decide whether it's a maximal *proxy* we're allowed to SIGKILL.
  *
  * Matches the bare `maximal` binary (CLI: `/…/maximal start …`; the Tauri
- * sidecar: `/…/Maximal.app/Contents/MacOS/maximal start …`) but deliberately
+ * sidecar: `/…/ModelRelay.app/Contents/MacOS/maximal start …`) but deliberately
  * NOT `maximal-shell` (the menu-bar app — killing it would be wrong) and not
  * unrelated commands like `maximalist-editor`. A false positive here means we
  * SIGKILL the wrong process, so the boundary cases are covered by tests.

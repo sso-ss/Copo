@@ -228,7 +228,7 @@ function removeBinary(opts: InstallTargetOptions = {}): void {
   let removed = 0
   for (const target of installTargets(opts)) {
     // lstat (not existsSync) so a *broken* symlink — e.g.
-    // ~/.local/bin/maximal pointing at a Maximal.app that's already
+    // ~/.local/bin/maximal pointing at a ModelRelay.app that's already
     // been dragged to the Trash — is still detected and unlinked
     // rather than silently skipped as "not found".
     let stat: fs.Stats

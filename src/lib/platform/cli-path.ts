@@ -7,7 +7,7 @@
  *
  *  1. `ensureCliSymlink()` — the macOS DMG first-launch shim. The
  *     `.app` bundle ships its CLI at
- *     `…/Maximal.app/Contents/MacOS/maximal`, which is NOT on any
+ *     `…/ModelRelay.app/Contents/MacOS/maximal`, which is NOT on any
  *     default PATH. So on first launch from the bundle we drop a
  *     **symlink** (never a copy — no duplication, tracks app updates)
  *     into `~/.local/bin`. Per policy: if `~/.local/bin` already

@@ -11,7 +11,7 @@
 # and capabilities/loopback.json via the `default` permission set.
 
 [default]
-description = "Permissions for Maximal's own Tauri commands."
+description = "Permissions for ModelRelay's own Tauri commands."
 permissions = [
   "allow-open-settings-at",
   "allow-open-dashboard",
