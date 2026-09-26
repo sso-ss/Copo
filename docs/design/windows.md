@@ -1,4 +1,53 @@
-# Window family: Settings + Dashboard
+# Settings, Usage, and companion windows
+
+Follow [DESIGN.md](../../DESIGN.md) for the shared warm neutral surfaces,
+rounded controls, typography, appearance, and accessibility requirements.
+
+## Usage belongs in Settings
+
+Settings → Usage replaces the standalone Dashboard entry. The native tray and
+`open_dashboard` command open the existing Settings window at `#usage`.
+Bookmarks to `/ui/dashboard`, `/ui/dashboard/`, and `/ui/dashboard/index.html`
+redirect to `/ui/settings/#usage`, preserving a valid `period` query parameter.
+Legacy Dashboard assets remain available for compatibility.
+
+Account and Usage are sibling destinations in the Settings sidebar. Account
+also has a View usage link. Ordinary Settings sections use `--content-max`;
+Usage uses `--content-max-wide` so the available window width serves its data.
+The window remains resizable; dimensions are defined by the native window
+builder in `shell/src-tauri/src/lib.rs`.
+
+The Usage layout preserves the full Dashboard information:
+
+- Total, input, output, cache-read, and cache-write tokens, request count,
+  and reported AIU cost.
+- Current Copilot quotas, used/remaining amounts, limits, and unlimited states.
+- Every model breakdown column and every paginated event-record column.
+- The full usage API response, available in an expandable section.
+
+The date selector reflects the backend's calendar windows: Today, This week
+(starting Monday), and This month. Quotas describe the provider's current
+allowances and are labeled independently of that selector. Recorded activity
+covers CoPo's usage store, not just the currently signed-in account.
+
+Metrics use neutral text and spacing. Quotas are individual cards. Wide tables
+scroll inside named, keyboard-focusable regions; the overall pane must not
+expand to the width of the table. Keep full identifiers accessible without
+truncation. Shared tokens and native controls supply both themes and focus.
+
+Usage summaries and the selected event page refresh every five seconds while
+Usage and the document are visible. Provider quotas refresh every minute.
+Leaving the section aborts in-flight requests. A changed period or page cannot
+receive a late response from the previous selection; a failed refresh retains
+successful data and shows a retry action. Missing data is never rendered as zero.
+
+## Shared runtime and appearance
+
+Settings and Usage are bundled together from `shell/ui/settings/index.html` and
+served by the sidecar at `/ui/settings/`, using the same localization runtime
+and generated CSS tokens. The native appearance preference updates both.
+The old Dashboard bundle remains independently generated for compatibility;
+its token values continue to come from the shared theme generator.
 
 The Companion and Connections windows are local Bun-bundled Tauri assets.
 They load before the sidecar and import the generated shared CSS tokens.
@@ -6,68 +55,7 @@ Companion is a transparent desktop button; Connections is a compact vertical
 list with secondary account controls. Both reuse existing Settings actions.
 One native event subscription continues when either window is hidden.
 
-The Settings window (`shell/`) and the Dashboard window
-(`shell/ui/dashboard/index.html`) share one design language. This doc
-codifies what's shared, where they diverge, and the architectural
-constraint that makes drift between them a permanent risk.
-
-## What's shared
-
-- Dark-first with light + system override (`prefers-color-scheme`).
-- Same crimson `--brand` for identity. Same teal `--accent` for
-  interactive surfaces — *in theory.* Currently drifted; see
-  [`failure-modes.md`](failure-modes.md).
-- Same Fraunces + Commissioner pairing, with Fraunces rationed to the
-  brand mark and **one** display heading per window.
-- Same token vocabulary (see [`tokens.md`](tokens.md)). Same spacing
-  scale, three surface levels, three elevation levels.
-
-## Where they diverge
-
-| Concern | Dashboard | Settings |
-|---|---|---|
-| Sections | 1 (scroll-only) | 8 (sidebar nav) |
-| Layout | Single column, ~720px max (not tokenized) | `--sidebar-width` rail + `--content-max` pane |
-| Bundling | One embedded HTML file, separate `<style>` block | Vite-bundled multi-file (React + vanilla islands) |
-| Tokens live in | `shell/ui/dashboard/style.css` (independent declaration) | `shell/src/tokens.css` (imported by all shell CSS) |
-
-**Scroll-only vs sidebar-nav is a function of section count, not a
-stylistic choice.** A single-section window doesn't earn a sidebar; a
-multi-section window doesn't earn the burden of one giant scroll. If
-the Dashboard grows to two unrelated sections it gets typographic
-breaks, not chrome; if it grows to five, it gets a sidebar like
-Settings does. The threshold is "would a user need to jump to a
-specific section by name?" — not pixel count.
-
-## Sidecar-served vs Vite-served: an architectural constraint
-
-The Dashboard is served by the proxy itself as a single embedded HTML
-file (Bun's `import attribute` machinery embeds the file at build
-time). It has no module resolution, no CSS imports, no bundler.
-
-The Settings window is a Vite-bundled app that imports
-`shell/src/tokens.css` like any other stylesheet.
-
-**Consequence:** there is no shared CSS file. **Token values must be
-duplicated in both places. Any token edit must be applied in both
-locations.** The header of `shell/src/tokens.css` ("This is the ONE
-file allowed to declare raw values") is true *within the shell* — the
-Dashboard mirrors it by convention, not by import.
-
-**Don't try to "fix" this by serving `tokens.css` from the proxy and
-linking to it from the Dashboard:** that breaks the embed-everything
-property the proxy depends on for single-binary distribution.
-
-The right fix is mechanical: a build-time check (or pre-commit hook,
-or test) that diffs the token declarations in `tokens.css` vs
-the dashboard `style.css` and fails on mismatch. See
-[`change-checklists.md`](change-checklists.md) → *Changing a token
-value* for the manual workflow until that exists.
-### Shared personalization
-
-Settings → Personalization owns the desktop buddy size and appearance controls.
-The native preference store broadcasts changes to Settings, Dashboard, and both
-companion windows, including across their different origins. Appearance follows
-the system by default, with explicit Light and Dark choices. Small, Just right,
-and Big buddy preserve the artwork proportions; resizing anchors the feet and
-reclamps the pet to its current display. These preferences persist across launch.
+Settings → Personalization owns the buddy size and appearance controls.
+The native preference store broadcasts changes across the windows, including
+across their different origins. Appearance follows the system by default,
+with explicit Light and Dark choices. Preferences persist across launch.

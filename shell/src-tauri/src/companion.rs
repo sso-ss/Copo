@@ -77,6 +77,7 @@ fn clamp_pet(app: &AppHandle) {
 pub fn toggle_visibility(app: &AppHandle) {
     if let Some(pet) = app.get_webview_window(PET) {
         if pet.is_visible().unwrap_or(false) {
+            reset_pet_pointer(app);
             let _ = pet.hide();
             if let Some(panel) = app.get_webview_window(PANEL) { let _ = panel.hide(); }
         } else {
@@ -100,13 +101,21 @@ pub fn show_panel(app: &AppHandle) -> Result<(), String> {
     if !visible(app) { toggle_visibility(app); }
     if let Some(panel) = app.get_webview_window(PANEL) {
         if panel.is_visible().unwrap_or(false) {
+            reset_pet_pointer(app);
             return panel.set_focus().map_err(|e| e.to_string());
         }
     }
     toggle_panel(app)
 }
 
+fn reset_pet_pointer(app: &AppHandle) {
+    // The pet may already be unfocused, so opening a native panel need not
+    // send its webview a blur or pointerleave event.
+    let _ = app.emit_to(PET, "companion:reset-pointer", ());
+}
+
 fn toggle_panel(app: &AppHandle) -> Result<(), String> {
+    reset_pet_pointer(app);
     if let Some(panel) = app.get_webview_window(PANEL) {
         if panel.is_visible().unwrap_or(false) {
             return panel.hide().map_err(|e| e.to_string());

@@ -58,8 +58,12 @@ memory and must reconcile on reconnect.
 
 1. Accept an initial snapshot as the baseline. Display its retained outcomes,
    but do not generate reactions from historical entries.
-2. Within the accepted generation, ignore request events at or below the
-   snapshot/current event ID. Apply live events in increasing order.
+2. Within the accepted generation, apply live events in increasing order.
+   Initial/recovery snapshots establish the stream baseline. Ordinary status
+   polls may advance displayed activity, but keep a separate live watermark
+   and verification baseline so a poll cannot swallow an in-flight connection
+   celebration. Late events never overwrite newer activity or replay outcomes
+   superseded by that activity.
 3. On a gap or unknown generation, mark activity unavailable and obtain a fresh
    snapshot. Do not turn missing evidence into completed work.
 4. On stream loss or heartbeat expiry, clear visible working claims until
@@ -271,6 +275,20 @@ before browser access could execute.
 - Live visual review was attempted again, but automatic approval review failed
   before browser access: `This model does not support the responses endpoint`.
   Rendered light/dark, minimum-size, keyboard, and animation review is pending.
+
+### Happy verification reliability
+
+The happy/verification hold is now ten seconds. Status polling no longer
+consumes a live verification event before the stream delivers it. Initial and
+recovery snapshots still restore readiness without celebrating history, and
+new work cancels happiness even when observed by polling first. This remains
+a connection-verification reaction; it does not add whole-task detection.
+
+Validation: all 32 focused state/route/event tests, shell TypeScript,
+`check:fast`, and the bundled desktop build passed. The signed app replaced
+`~/Desktop/CoPo.app`, with the previous bundle backed up under
+`~/.local/share/copo-update-20260925/backups/CoPo-before-happy-1790405855213025000.app`.
+The running app was not restarted; native visual verification is pending.
 
 ### Outstanding PRD acceptance
 

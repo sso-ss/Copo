@@ -123,6 +123,7 @@ a:hover {
 
 /* ---- Pane ---- */
 .pane {
+  min-width: 0;
   padding: var(--space-6);
   padding-block-end: var(--space-6);
   overflow-y: auto;
@@ -465,17 +466,26 @@ a:hover {
   color: var(--link-hover);
 }
 
-/* ---- Signed-in hero ----
-   The authenticated state's visual focal point: GitHub avatar + the
-   user's login set in Fraunces. Per design-context, Fraunces is
-   rationed to "brand mark + one display heading per window" — here
-   we spend that heading on the user, because the user is the point
-   of this screen. No card chrome (this is one state in a state
-   machine, not a discrete entity). */
+/* ---- Connected account ----
+   One card for the active identity, with session details and account actions.
+   Recovery notices and alternative accounts remain outside the card. */
+.account-connection__details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-block-start: var(--space-4);
+  border-top: var(--border-width-hairline) solid var(--border-subtle);
+}
+
+.account-connection__details [hidden] {
+  display: none;
+}
+
 .signed-in-hero {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .signed-in-hero__avatar {
@@ -483,16 +493,16 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: var(--space-7);
+  height: var(--space-7);
   border-radius: var(--radius-pill);
   background: var(--surface-control);
   color: var(--text-muted);
   overflow: hidden;
   font-family: var(--font-display);
-  font-size: var(--text-xl);
-  font-weight: var(--weight-2xl);
-  line-height: 1;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-lg);
+  line-height: var(--leading-lg);
   user-select: none;
 }
 
@@ -504,6 +514,7 @@ a:hover {
 }
 
 .signed-in-hero__text {
+  flex: 1 1 min-content;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -513,12 +524,12 @@ a:hover {
 .signed-in-hero__name {
   margin: 0;
   font-family: var(--font-display);
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-2xl);
-  line-height: var(--leading-2xl);
-  letter-spacing: -0.015em;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-lg);
+  line-height: var(--leading-lg);
+  letter-spacing: var(--tracking-xl);
   color: var(--text-strong);
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .signed-in-hero__caption {
@@ -529,49 +540,32 @@ a:hover {
   color: var(--text-muted);
 }
 
-/* The login and the reachability indicator share a row; the ⇄ stroke sits to
-   the right of the name. */
-.signed-in-hero__name-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-/* Reachability indicator (the ⇄ stroke). Calm by default — status color is the
-   only signal, no motion. "connected" reads success; "degraded" warns when a
-   recent upstream rejection is riding along (the banner carries the detail). */
+/* Text conveys the state as well as color; no motion or icon-only meaning. */
 .conn-indicator {
-  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--status-success-fg) 10%, var(--surface-card));
   color: var(--status-success-fg);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-md);
+  line-height: var(--leading-lg);
 }
 
 .conn-indicator[data-conn="degraded"] {
+  background: color-mix(in srgb, var(--status-warning-fg) 10%, var(--surface-card));
   color: var(--status-warning-fg);
 }
 
-.conn-indicator__icon {
-  width: var(--size-md);
-  height: var(--size-md);
-}
-
-/* What the arrows point at: the GitHub Copilot mark. Sized to the name's type
-   scale (1em == --text-2xl below) so it reads as a peer of the login, not a
-   tiny glyph. Neutral tone — it's a target/logo, not a status. */
-.conn-target {
+.conn-indicator__dot {
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  font-size: var(--text-2xl);
-  color: var(--text-base-color);
-}
-
-.conn-target__icon {
-  width: 1em;
-  height: 1em;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: currentColor;
 }
 
 .state--error .state__title {
@@ -1975,6 +1969,12 @@ a:hover {
 }
 .personalization-preview[data-buddy-size="small"] .personalization-preview__buddy { width: calc((var(--space-8) * 2 + var(--space-4)) * .75); }
 .personalization-preview[data-buddy-size="large"] .personalization-preview__buddy { width: calc((var(--space-8) * 2 + var(--space-4)) * 1.35); }
+.personalization-preview__buddy[hidden], .motion-preview [hidden] { display: none; }
+.motion-preview, .motion-preview__controls { display: grid; gap: var(--space-3); }
+.motion-preview__toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.motion-preview__toolbar .state__caption { margin: 0; }
+.motion-preview__choice { display: grid; gap: var(--space-2); font-size: var(--text-sm); color: var(--text-strong); }
+.motion-preview__choice select { width: 100%; min-width: 0; }
 .personalization-field { padding: 0; margin: 0; border: 0; min-width: 0; }
 .personalization-field legend { padding: 0; margin-bottom: var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-md); color: var(--text-strong); }
 .personalization-segments { display: flex; padding: var(--space-1); gap: var(--space-1); background: var(--surface-control); border: var(--border-width-thin) solid var(--border-subtle); border-radius: var(--radius-input); }
@@ -1984,3 +1984,148 @@ a:hover {
 .personalization-segments input:checked + span { background: var(--surface-card); color: var(--text-strong); box-shadow: var(--elevation-card); }
 .personalization-segments input:focus-visible + span { outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset); }
 .personalization-segments input:disabled + span { opacity: .5; }
+
+/* Usage keeps every dashboard field inside the Settings navigation. */
+.section--usage {
+  max-width: var(--content-max-wide);
+  min-width: 0;
+}
+.usage-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+.usage-toolbar,
+.usage-heading-row,
+.account-usage-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.account-usage-link {
+  padding-block: var(--space-4);
+  border-bottom: var(--border-width-hairline) solid var(--border-subtle);
+}
+.account-usage-link > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.account-usage-link a {
+  text-decoration: none;
+}
+.usage-period {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+.usage-period select {
+  width: auto;
+  min-height: var(--size-2xl);
+}
+.usage-primary-metrics,
+.usage-token-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-8) * 2)), 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding-block: var(--space-4);
+}
+.usage-primary-metrics {
+  border-bottom: var(--border-width-hairline) solid var(--border-subtle);
+}
+.usage-view dt {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.usage-view dd {
+  margin: var(--space-1) 0 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  color: var(--text-strong);
+}
+.usage-primary-metrics dd {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-xl);
+  line-height: var(--leading-xl);
+}
+.usage-token-breakdown dd {
+  font-size: var(--text-base);
+  font-weight: var(--weight-md);
+}
+.usage-quotas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-8) * 4)), 1fr));
+  gap: var(--space-4);
+}
+.usage-quota h4 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--weight-md);
+}
+.usage-quota .usage-heading-row > span {
+  font-size: var(--text-sm);
+}
+.usage-progress {
+  display: block;
+  appearance: none;
+  width: 100%;
+  height: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  color: var(--accent);
+  background: var(--surface-control);
+}
+.usage-progress::-webkit-progress-bar { background: var(--surface-control); }
+.usage-progress::-webkit-progress-value { background: var(--accent); }
+.usage-progress::-moz-progress-bar { background: var(--accent); }
+.usage-progress[data-level="warning"]::-webkit-progress-value { background: var(--status-warning-fg); }
+.usage-progress[data-level="error"]::-webkit-progress-value { background: var(--status-error-fg); }
+.usage-progress[data-level="warning"]::-moz-progress-bar { background: var(--status-warning-fg); }
+.usage-progress[data-level="error"]::-moz-progress-bar { background: var(--status-error-fg); }
+.usage-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  border: var(--border-width-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+}
+.usage-table-scroll:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+.usage-table {
+  white-space: nowrap;
+}
+.usage-table th {
+  text-transform: none;
+  letter-spacing: normal;
+}
+.usage-table .usage-number {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.usage-raw {
+  margin: 0;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: var(--text-sm) / var(--leading-base) var(--font-mono);
+}
+.usage-error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  color: var(--accent-destructive);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.usage-error p { margin: 0; }

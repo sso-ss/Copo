@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { t } from "../i18n";
+import { startMotionPreview } from "./motion-preview";
 
 interface Preferences {
   buddySize: "small" | "medium" | "large";
@@ -9,6 +10,7 @@ interface Preferences {
 
 /** Native preferences are shared across asset- and gateway-origin windows. */
 export async function startPersonalization(): Promise<void> {
+  startMotionPreview();
   let preferences: Preferences = { buddySize: "medium", appearance: "system" };
   const system = matchMedia("(prefers-color-scheme: dark)");
   const controls = [...document.querySelectorAll<HTMLInputElement>("input[data-preference]")];

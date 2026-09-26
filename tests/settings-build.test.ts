@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test"
 import { existsSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 
+import { artwork } from "../shell/src/companion/artwork"
+
 /**
  * Production-build smoke test for the web UI. Catches the "build stopped
  * producing servable assets" regression.
@@ -47,5 +49,25 @@ describe.skipIf(!ENABLED)("web UI production build", () => {
     expect(existsSync(DASHBOARD_INDEX)).toBe(true)
     const dashboardHtml = readFileSync(DASHBOARD_INDEX, "utf8")
     expect(dashboardHtml).toContain("./main.js")
+
+    // Both origins must have the actual renderer assets, not just the idle
+    // thumbnail that the HTML bundler happens to discover.
+    for (const name of [
+      ...artwork.map((frame) => `cat-${frame}.png`),
+      "cat-tail-regions.json",
+    ]) {
+      const settingsArt = join(DIST_UI, "settings", "motion-artwork", name)
+      const companionArt = join(
+        REPO_ROOT,
+        "shell",
+        "dist",
+        "companion",
+        "artwork",
+        name,
+      )
+      expect(readFileSync(settingsArt).equals(readFileSync(companionArt))).toBe(
+        true,
+      )
+    }
   }, 60_000)
 })

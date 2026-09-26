@@ -57,10 +57,29 @@ describe("ui routes", () => {
     expect(await res.text()).toContain("settings")
   })
 
-  test("serves the dashboard index", async () => {
-    const res = await app.request("/ui/dashboard/")
-    expect(res.status).toBe(200)
-    expect(await res.text()).toContain("dashboard")
+  test("opens old dashboard bookmarks in Settings Usage", async () => {
+    for (const path of [
+      "/ui/dashboard",
+      "/ui/dashboard/",
+      "/ui/dashboard/index.html",
+    ]) {
+      const res = await app.request(path)
+      expect(res.status).toBe(302)
+      expect(res.headers.get("location")).toBe("/ui/settings/#usage")
+    }
+  })
+
+  test("preserves valid periods and ignores unknown dashboard query values", async () => {
+    for (const period of ["day", "week", "month"]) {
+      const res = await app.request(`/ui/dashboard/?period=${period}`)
+      expect(res.headers.get("location")).toBe(
+        `/ui/settings/?period=${period}#usage`,
+      )
+    }
+    const res = await app.request(
+      "/ui/dashboard/?period=invalid&endpoint=https://example.com",
+    )
+    expect(res.headers.get("location")).toBe("/ui/settings/#usage")
   })
 
   test("serves a settings asset with the right content type", async () => {
@@ -85,12 +104,6 @@ describe("ui routes", () => {
     const res = await app.request("/ui/settings")
     expect(res.status).toBe(301)
     expect(res.headers.get("location")).toBe("/ui/settings/")
-  })
-
-  test("redirects the bare /ui/dashboard to the trailing-slash index", async () => {
-    const res = await app.request("/ui/dashboard")
-    expect(res.status).toBe(301)
-    expect(res.headers.get("location")).toBe("/ui/dashboard/")
   })
 
   test("serves the dashboard for unknown sub-routes (index fallback)", async () => {

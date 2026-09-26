@@ -174,14 +174,14 @@ describe("companion request-only state", () => {
     expect(state.display(0).pose).toBe("focus")
     state.request(event(2, "finished"), 10)
     expect(state.display(10).key).toBe("companion-verified")
-    expect(state.display(5009).pose).toBe("success")
-    expect(state.display(5010).pose).toBe("idle")
-    state.request(event(3, "started", 1), 6000)
-    state.request(event(4, "finished"), 7000)
-    expect(state.display(7000).pose).toBe("idle")
+    expect(state.display(10009).pose).toBe("success")
+    expect(state.display(10010).pose).toBe("idle")
+    state.request(event(3, "started", 1), 11000)
+    state.request(event(4, "finished"), 12000)
+    expect(state.display(12000).pose).toBe("idle")
   })
 
-  test("the happy pose lasts five seconds without being restarted by refreshes", () => {
+  test("the happy pose lasts ten seconds without being restarted by refreshes", () => {
     const state = ready()
     state.request(event(1, "started", 1), 0)
     state.request(event(2, "finished"), 100)
@@ -190,13 +190,14 @@ describe("companion request-only state", () => {
     if (!data || !activity) throw new Error("missing fixture")
     state.update({ ...data, activity }, 4000)
     state.request(event(2, "finished"), 4500)
-    expect(state.display(5099).pose).toBe("success")
-    expect(state.display(5100)).toEqual({
+    expect(state.display(5100).pose).toBe("success")
+    expect(state.display(10099).pose).toBe("success")
+    expect(state.display(10100)).toEqual({
       pose: "idle",
       key: "companion-ready",
     })
-    state.update({ ...data, activity }, 6000)
-    expect(state.display(6000).pose).toBe("idle")
+    state.update({ ...data, activity }, 11000)
+    expect(state.display(11000).pose).toBe("idle")
   })
 
   test("disabling the last configured tool restores the empty status", () => {
@@ -290,5 +291,108 @@ describe("companion request-only state", () => {
       pose: "sleep",
       key: "companion-waiting",
     })
+  })
+})
+
+describe("companion polling and live event ordering", () => {
+  test("a poll arriving before the live success does not swallow verification", () => {
+    const state = ready()
+    const data = state.data
+    if (!data) throw new Error("missing fixture")
+    const finished = event(2, "finished")
+    state.update(
+      {
+        ...data,
+        activity: {
+          ...snapshot(),
+          eventId: 2,
+          activity: [finished.activity],
+          recentEvents: [finished],
+        },
+      },
+      100,
+    )
+    expect(state.ready).toBe(1)
+    expect(state.reaction).toBeNull()
+    expect(state.request(event(1, "started", 1), 110)).toBe(true)
+    expect(state.running).toBe(0)
+    expect(state.request(finished, 120)).toBe(true)
+    expect(state.display(120).key).toBe("companion-verified")
+    state.request(finished, 2000)
+    expect(state.display(10119).pose).toBe("success")
+    expect(state.display(10120).pose).toBe("idle")
+    expect(state.activity?.recentEvents).toHaveLength(1)
+  })
+
+  test("a late verification cannot replay over newer work captured by a poll", () => {
+    const state = ready()
+    const data = state.data
+    if (!data) throw new Error("missing fixture")
+    const working = event(3, "started", 1)
+    state.update(
+      {
+        ...data,
+        activity: {
+          ...snapshot(),
+          eventId: 3,
+          activity: [working.activity],
+          activeRequests: [working],
+          recentEvents: [event(2, "finished")],
+        },
+      },
+      100,
+    )
+    state.request(event(1, "started", 1), 110)
+    state.request(event(2, "finished"), 120)
+    expect(state.display(120).pose).toBe("focus")
+    expect(state.reaction).toBeNull()
+    state.request(working, 130)
+    state.request(event(4, "finished"), 140)
+    expect(state.display(140).pose).toBe("idle")
+  })
+
+  test("new work found by polling cancels happiness before its stream event", () => {
+    const state = ready()
+    state.request(event(1, "started", 1), 0)
+    state.request(event(2, "finished"), 100)
+    const data = state.data
+    if (!data) throw new Error("missing fixture")
+    const working = event(3, "started", 1)
+    state.update(
+      {
+        ...data,
+        activity: {
+          ...snapshot(),
+          eventId: 3,
+          activity: [working.activity],
+          activeRequests: [working],
+          recentEvents: [event(2, "finished")],
+        },
+      },
+      200,
+    )
+    expect(state.display(200).pose).toBe("focus")
+    expect(state.reaction).toBeNull()
+  })
+
+  test("recovery snapshots do not turn delayed history into a celebration", () => {
+    const state = ready()
+    const data = state.data
+    if (!data) throw new Error("missing fixture")
+    state.disconnect(100)
+    state.update(
+      {
+        ...data,
+        activity: {
+          ...snapshot(),
+          eventId: 2,
+          recentEvents: [event(2, "finished")],
+        },
+      },
+      5000,
+    )
+    state.request(event(1, "started", 1), 5100)
+    state.request(event(2, "finished"), 5200)
+    expect(state.display(5200).pose).toBe("idle")
   })
 })

@@ -118,7 +118,7 @@ color and card for every metric. Use rounded surfaces for quota entities and
 detailed tables, readable compact text, and the shared focus ring. Wide tables
 scroll within their panels. Reserve status color for actual warnings or errors.
 
-The companion's happy reaction holds for five seconds so it can be noticed.
+The companion's happy reaction holds for ten seconds so it can be noticed.
 New work and gateway problems take priority; polling must not restart the
 timer. Preserve truthful triggers: a verified connection is not evidence that
 an entire task finished. Reduced Motion shows the same pose without animation.
@@ -128,6 +128,11 @@ artwork, preserve its proportions and pixel edges, and reflect the saved buddy
 size and appearance. Keep the full cat visible at each size with a stable
 preview area. A failed save must leave the preview consistent with the saved
 preferences. Do not replace the cat with an emoji or recolor the artwork.
+
+“Try motions” expands a local playground below the preview. Reuse the live
+companion renderer for poses and small gestures, with individual selection,
+Play all, and Pause controls. Keep playback separate from real tool activity.
+Stop it when the section closes; Reduce Motion allows static pose selection.
 
 ## Accessibility and finishing checks
 

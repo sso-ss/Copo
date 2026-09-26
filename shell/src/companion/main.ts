@@ -45,6 +45,7 @@ element(isPanel ? "panel" : "pet").hidden = false;
 
 async function action(name: string): Promise<void> {
   if (name === "sign-out") { await signOut(); return; }
+  if (name === "panel" || name === "drag" || name === "hide") resetPointer();
   try {
     await invoke("companion_action", { action: name });
   } catch { showError(); }
@@ -104,9 +105,19 @@ function dismissHint(): void {
   try { localStorage.setItem("companion.hint-seen", "true"); } catch { /* optional preference */ }
 }
 cat.addEventListener("pointerenter", () => { hovered = true; dismissHint(); paint(); });
-cat.addEventListener("pointerleave", () => { hovered = false; paint(); });
 let press: { x: number; y: number } | null = null;
 let dragged = false;
+function resetPointer(): void {
+  hovered = false;
+  press = null;
+  paint();
+}
+// Native windows and dragging can take over without delivering pointerleave.
+// Only a fresh pointerenter should restore the hover pose after that handoff.
+cat.addEventListener("pointerleave", resetPointer);
+cat.addEventListener("pointercancel", resetPointer);
+window.addEventListener("blur", resetPointer);
+document.addEventListener("visibilitychange", () => { if (document.hidden) resetPointer(); });
 cat.addEventListener("pointerdown", (event) => { if (event.button === 0) { press = { x: event.screenX, y: event.screenY }; dragged = false; } });
 cat.addEventListener("pointermove", (event) => {
   if (press && !dragged && Math.hypot(event.screenX - press.x, event.screenY - press.y) > 4) {
@@ -116,7 +127,7 @@ cat.addEventListener("pointermove", (event) => {
     void action("drag").then(() => action("place"));
   }
 });
-cat.addEventListener("pointerup", () => { press = null; });
+window.addEventListener("pointerup", () => { press = null; });
 cat.addEventListener("click", () => { if (!dragged) { dismissHint(); void action("panel"); } dragged = false; });
 cat.addEventListener("contextmenu", (event) => { event.preventDefault(); void action("panel"); });
 element("hint").addEventListener("click", () => { dismissHint(); void action("panel"); });
@@ -284,6 +295,7 @@ async function refresh(): Promise<void> {
 
 type StreamMessage = { kind: string; data?: ClientActivitySnapshot | ClientRequestEvent };
 async function start(): Promise<void> {
+  if (!isPanel) await listen("companion:reset-pointer", resetPointer);
   await listen<string>("companion:gateway", ({ payload }) => {
     if (payload === "ready") { void refresh(); return; }
     state.starting = payload === "starting";

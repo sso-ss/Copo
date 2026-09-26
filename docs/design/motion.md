@@ -8,7 +8,7 @@ Companion Reduce Motion uses static poses and static hearts, with no crossfade.
 
 ## Timings
 
-- **5 seconds** — companion happy/verification pose hold. New active work or
+- **10 seconds** — companion happy/verification pose hold. New active work or
   gateway failure interrupts it; refreshes and duplicate events do not extend
   it. Whole-task completion still requires an authoritative task event.
 - **150ms ease-out** — default for hover/active state changes.

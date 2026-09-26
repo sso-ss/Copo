@@ -57,6 +57,9 @@ async function buildSettings(): Promise<void> {
   // the vendored woff2 verbatim next to the bundle, same as the dashboard
   // serves its ./vendor/ assets, so the webview never hits a CDN.
   await cp(SETTINGS_VENDOR, join(SETTINGS_OUT, "vendor"), { recursive: true })
+  // The settings preview is gateway-served; companion windows use Tauri's
+  // asset origin. Keep the same artwork available to both renderers offline.
+  await cp(join(REPO, "shell/ui/companion/artwork"), join(SETTINGS_OUT, "motion-artwork"), { recursive: true })
 }
 
 async function buildDashboard(): Promise<void> {

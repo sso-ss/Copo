@@ -171,7 +171,7 @@ Use the approved assets and their calibrated apparent size. Preserve each origin
 
 ### Timing and priority — proposed defaults
 
-- Happy/connection celebration: 5 seconds, extended by user request so the pose
+- Happy/connection celebration: 10 seconds, extended so the pose
   has time to be seen. Future whole-task celebrations should use the same hold;
   the authoritative task-completion adapter is still required. Angry reaction:
   4 seconds.

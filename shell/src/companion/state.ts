@@ -3,7 +3,7 @@ import type { ClientActivitySnapshot, ClientRequestEvent } from "../../../src/li
 
 export type Pose = "sleep" | "idle" | "focus" | "success" | "failure" | "hover";
 
-const SUCCESS_REACTION_MS = 5000;
+const SUCCESS_REACTION_MS = 10000;
 
 /** Shared display rules for both local windows. Only live verification can
  * celebrate here; successful inference never means a whole task completed. */
@@ -14,8 +14,10 @@ export class CompanionState {
   starting = true;
   verified = new Set<string>();
   reaction: { pose: Pose; until: number; key: string } | null = null;
+  private requestEventId = 0;
+  private requestVerified = new Set<string>();
 
-  snapshot(snapshot: ClientActivitySnapshot): void {
+  snapshot(snapshot: ClientActivitySnapshot, preserveLiveEvents = false): void {
     const previous = this.activity;
     if (previous?.generation === snapshot.generation && previous.eventId > snapshot.eventId) return;
     if (previous?.generation !== snapshot.generation) {
@@ -25,6 +27,7 @@ export class CompanionState {
     this.activity = snapshot;
     this.available = true;
     this.starting = false;
+    if (this.running > 0) this.reaction = null;
     for (const event of snapshot.recentEvents) {
       if (event.status === "finished") this.verified.add(event.apiKeyId);
     }
@@ -34,12 +37,19 @@ export class CompanionState {
     for (const activity of snapshot.activity) {
       if (activity.status === "finished") this.verified.add(activity.apiKeyId);
     }
+    // A poll can overtake an in-flight stream event. Only initial/recovery
+    // snapshots establish the live baseline; ordinary polls must not consume
+    // the verification event before it reaches the companion.
+    if (!preserveLiveEvents || previous?.generation !== snapshot.generation) {
+      this.requestEventId = snapshot.eventId;
+      this.requestVerified = new Set(this.verified);
+    }
   }
 
   update(data: CompanionData, now = Date.now()): void {
     const previousHealth = this.data?.gateway;
     this.data = data;
-    this.snapshot(data.activity);
+    this.snapshot(data.activity, this.available);
     if (data.gateway === "upstream-error" && previousHealth !== data.gateway) {
       this.reaction = { pose: "failure", until: now + 4000, key: "companion-upstream-error" };
     }
@@ -53,23 +63,30 @@ export class CompanionState {
       this.available = false;
       return false;
     }
-    if (event.eventId <= snapshot.eventId) return true;
-    if (event.eventId !== snapshot.eventId + 1) {
+    if (event.eventId <= this.requestEventId) return true;
+    if (event.eventId !== this.requestEventId + 1) {
       this.available = false;
       return false;
     }
-    snapshot.eventId = event.eventId;
-    snapshot.activity = snapshot.activity.filter((entry) => entry.apiKeyId !== event.apiKeyId && entry.apiKeyId !== event.removedApiKeyId);
-    snapshot.activity.push(event.activity);
-    snapshot.activeRequests = snapshot.activeRequests.filter((request) => request.requestId !== event.requestId);
+    this.requestEventId = event.eventId;
+    if (event.eventId > snapshot.eventId) {
+      snapshot.eventId = event.eventId;
+      snapshot.activity = snapshot.activity.filter((entry) => entry.apiKeyId !== event.apiKeyId && entry.apiKeyId !== event.removedApiKeyId);
+      snapshot.activity.push(event.activity);
+      snapshot.activeRequests = snapshot.activeRequests.filter((request) => request.requestId !== event.requestId);
+      if (event.status === "started") snapshot.activeRequests.push(event);
+      else snapshot.recentEvents = [...snapshot.recentEvents, event].slice(-256);
+    }
     if (event.status === "started") {
-      snapshot.activeRequests.push(event);
       this.reaction = null;
     } else {
-      snapshot.recentEvents = [...snapshot.recentEvents, event].slice(-256);
-      const newlyVerified = event.status === "finished" && !this.verified.has(event.apiKeyId);
-      if (event.status === "finished") this.verified.add(event.apiKeyId);
-      if (this.running === 0) {
+      const newlyVerified = event.status === "finished" && !this.requestVerified.has(event.apiKeyId);
+      if (event.status === "finished") {
+        this.verified.add(event.apiKeyId);
+        this.requestVerified.add(event.apiKeyId);
+      }
+      // Never replay an outcome superseded by work already observed in a poll.
+      if (event.eventId === snapshot.eventId && this.running === 0) {
         if (event.status === "stopped") this.reaction = { pose: "failure", until: now + 4000, key: "companion-interrupted" };
         else if (newlyVerified && this.data?.gateway === "ready" && this.data.account && this.data.connections.some((c) => c.configured && c.apiKeyId === event.apiKeyId)
           && this.reaction?.pose !== "failure")

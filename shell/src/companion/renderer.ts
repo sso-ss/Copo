@@ -6,15 +6,19 @@ type Region = { x: number; y: number; width: number; height: number };
 
 /** Port of Companion/Sources/BuddyArt.swift. Frames keep their calibrated
  * 1024 × 1040 canvas; body pixels are never stretched pose by pose. */
-export async function createRenderer(canvas: HTMLCanvasElement): Promise<(pose: Pose, phase: number, animated: boolean) => void> {
+export async function createRenderer(canvas: HTMLCanvasElement, artworkBase = "./artwork/"): Promise<(pose: Pose, phase: number, animated: boolean) => void> {
+  const assetUrl = (name: string) => new URL(name, new URL(artworkBase, document.baseURI));
   const frames = new Map<string, HTMLImageElement>();
   await Promise.all(artwork.map(async (name) => {
     const image = new Image();
-    image.src = `./artwork/cat-${name}.png`;
+    image.src = assetUrl(`cat-${name}.png`).href;
     await image.decode();
     frames.set(name, image);
   }));
-  const regions = await fetch("./artwork/cat-tail-regions.json").then((r) => r.json()) as Record<string, Region[]>;
+  const regions = await fetch(assetUrl("cat-tail-regions.json")).then((r) => {
+    if (!r.ok) throw new Error("Artwork unavailable");
+    return r.json();
+  }) as Record<string, Region[]>;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas unavailable");
   const cg = context;

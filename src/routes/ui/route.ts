@@ -99,13 +99,22 @@ export const uiRoutes = new Hono()
 
 // Bare-surface redirects to the canonical trailing-slash index.
 uiRoutes.get("/settings", (c) => c.redirect("/ui/settings/", 301))
-uiRoutes.get("/dashboard", (c) => c.redirect("/ui/dashboard/", 301))
+// Old bookmarks keep their period while opening Usage inside Settings.
+function usageLocation(period: string | undefined): string {
+  const query =
+    period && ["day", "month", "week"].includes(period) ?
+      `?period=${period}`
+    : ""
+  return `/ui/settings/${query}#usage`
+}
+for (const path of ["/dashboard", "/dashboard/", "/dashboard/index.html"]) {
+  uiRoutes.get(path, (c) =>
+    c.redirect(usageLocation(c.req.query("period")), 302),
+  )
+}
 
 uiRoutes.get("/settings/", () =>
   serve("/ui/settings/index.html", "/ui/settings/index.html"),
-)
-uiRoutes.get("/dashboard/", () =>
-  serve("/ui/dashboard/index.html", "/ui/dashboard/index.html"),
 )
 
 // Assets + client-side routes. Settings is an SPA, so unknown sub-paths

@@ -14,10 +14,12 @@ import { apiCall, subscribeAuthEvents } from "./proxy/client";
 import { mountApiClients } from "./ui/islands/api-clients-island";
 import { mountApps } from "./ui/islands/apps-island";
 import { mountModels } from "./ui/islands/models-island";
+import { mountUsage } from "./ui/islands/usage-island";
 import { startPersonalization } from "./ui/personalization";
 
 type SectionId =
   | "account"
+  | "usage"
   | "apps"
   | "endpoint"
   | "api-clients"
@@ -28,6 +30,7 @@ type SectionId =
 
 const SECTIONS: ReadonlyArray<SectionId> = [
   "account",
+  "usage",
   "apps",
   "endpoint",
   "api-clients",
@@ -921,16 +924,16 @@ function renderAccountAvatar(login: string, avatarUrl?: string): void {
 
 /**
  * Format how long the session has been connected, from the `connected_since`
- * ISO timestamp. Coarse on purpose — "Connected · 2h", not a ticking clock —
- * so it reads as a status, not a stopwatch. Returns just "Connected" when the
- * timestamp is absent (cold-boot / legacy session) or in the future (clock
- * skew).
+ * ISO timestamp. Coarse on purpose, with an explicit duration label.
+ * Returns an empty caption when the timestamp is missing, invalid, or in
+ * the future (clock skew).
  */
 function formatConnectedFor(connectedSince: string | undefined): string {
-  if (!connectedSince) return t("account-connected");
+  if (!connectedSince) return "";
   const sinceMs = Date.parse(connectedSince);
-  if (Number.isNaN(sinceMs)) return t("account-connected");
+  if (Number.isNaN(sinceMs)) return "";
   const elapsed = Date.now() - sinceMs;
+  if (elapsed < 0) return "";
   if (elapsed < 60_000) return t("account-connected-just-now");
   const minutes = Math.floor(elapsed / 60_000);
   if (minutes < 60) return t("account-connected-minutes", { minutes });
@@ -958,9 +961,9 @@ function stopConnUptimeTicker(): void {
 }
 
 /**
- * Paint the reachability indicator + the "Connected · <uptime>" line. The ⇄
- * stroke turns "degraded" when a recent upstream rejection is riding along
- * (the rejection banner explains the why); otherwise it reads "connected".
+ * Paint a labeled connection badge and a separate session-duration caption.
+ * Recent upstream rejections get a visible warning label; the banner carries
+ * the actionable explanation.
  */
 function renderConnection(
   connectedSince: string | undefined,
@@ -976,13 +979,22 @@ function renderConnection(
         : t("account-conn-aria-connected"),
     );
   }
-  setAccountField("conn_status", formatConnectedFor(connectedSince));
+  setAccountField(
+    "conn_label",
+    t(degraded ? "account-conn-aria-degraded" : "account-connected"),
+  );
+  const caption = accountSlot("conn_status");
+  const duration = formatConnectedFor(connectedSince);
+  setAccountField("conn_status", duration);
+  if (caption) caption.hidden = !duration;
   // Keep the uptime advancing while this card is visible.
   stopConnUptimeTicker();
   if (connectedSince) {
     connUptimeTimer = setInterval(() => {
       if (readHashSection() !== "account") return;
-      setAccountField("conn_status", formatConnectedFor(connectedSince));
+      const duration = formatConnectedFor(connectedSince);
+      setAccountField("conn_status", duration);
+      if (caption) caption.hidden = !duration;
     }, 60_000);
   }
 }
@@ -2013,6 +2025,7 @@ window.addEventListener("DOMContentLoaded", () => {
   mountApiClients();
   mountApps();
   mountModels();
+  mountUsage();
   wireNav();
   syncFromHash();
   void loadDiagnostics();

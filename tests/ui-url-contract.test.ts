@@ -22,7 +22,7 @@ const SHELL_LIB_RS = readFileSync(
 )
 
 // The canonical UI window URLs the Tauri shell navigates to.
-const UI_WINDOW_PATHS = ["/ui/settings/", "/ui/dashboard/"] as const
+const UI_WINDOW_PATHS = ["/ui/settings/"] as const
 
 describe("shell ↔ proxy /ui URL contract", () => {
   for (const path of UI_WINDOW_PATHS) {
@@ -44,6 +44,23 @@ describe("shell ↔ proxy /ui URL contract", () => {
       expect([200, 503]).toContain(res.status)
     })
   }
+
+  test("the native usage shortcut opens the Settings usage section", () => {
+    const start = SHELL_LIB_RS.indexOf("fn open_dashboard_window(")
+    const end = SHELL_LIB_RS.indexOf("\n}", start)
+    expect(start).toBeGreaterThan(-1)
+    const implementation = SHELL_LIB_RS.slice(start, end)
+    expect(implementation).toContain('open_settings_window(app, Some("usage"))')
+    expect(implementation).not.toContain("WebviewWindowBuilder")
+  })
+
+  test("the former dashboard entry redirects to the served Settings usage page", async () => {
+    const app = new Hono()
+    app.route("/ui", uiRoutes)
+    const response = await app.request("/ui/dashboard/")
+    expect(response.status).toBe(302)
+    expect(response.headers.get("location")).toBe("/ui/settings/#usage")
+  })
 
   test("legacy /settings and /usage-viewer paths are still referenced as redirects", () => {
     // The shell may still deep-link the old paths; the proxy 301s them. Pin
