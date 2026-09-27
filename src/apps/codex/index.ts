@@ -19,6 +19,7 @@ import {
   prepareCodexConfig,
   readCodexConfig,
   revertCodexConfig,
+  routingBaseForConfigure,
   writeCodexConfig,
 } from "./config"
 import { detectCodexDesktop } from "./desktop-detect"
@@ -78,10 +79,11 @@ async function enableRouting(
       "Your configured Codex model is not available through CoPo's Responses API. Set a supported model in your Codex configuration, then try again.",
     )
   }
+  const routingBase = routingBaseForConfigure(before)
   const after = prepareCodexConfig(
-    before,
+    routingBase,
     codexProvider(
-      chooseProviderId(before),
+      chooseProviderId(routingBase),
       options?.automaticReview ?? hasCodexAutomaticReview(before),
     ),
     model,

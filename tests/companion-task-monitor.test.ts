@@ -13,7 +13,7 @@ afterEach(() => {
 })
 const header = {
   type: "session_meta",
-  payload: { id: "thread", model_provider: "maximal-app", source: "vscode" },
+  payload: { id: "thread", model_provider: "copo-app", source: "vscode" },
 }
 const line = (value: unknown) => `${JSON.stringify(value)}\n`
 const event = (type: string, timestamp: number, turn = "turn") => ({
@@ -29,7 +29,7 @@ function fixture() {
   fs.writeFileSync(file, line(header))
   const tracker = new TaskTracker("g", 0)
   let sources: Array<TaskSource> = [
-    { connectionId: "codex", directory, provider: "maximal-app" },
+    { connectionId: "codex", directory, provider: "copo-app" },
   ]
   const monitor = new TaskMonitor(tracker, () => sources)
   return {

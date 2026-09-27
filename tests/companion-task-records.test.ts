@@ -15,13 +15,13 @@ const codex = (type: string, timestamp: number, fields = {}) => ({
 
 describe("installed-client lifecycle record adapters", () => {
   test("Codex ignores inference responses and ends on task_complete", () => {
-    const parser = new CodexTaskRecords("maximal-app")
+    const parser = new CodexTaskRecords("copo-app")
     parser.consume(
       {
         type: "session_meta",
         payload: {
           id: "thread",
-          model_provider: "maximal-app",
+          model_provider: "copo-app",
           cli_version: "0.157.1",
           source: "vscode",
         },
@@ -54,7 +54,7 @@ describe("installed-client lifecycle record adapters", () => {
   })
 
   test("Codex checks provider attribution and suppresses child-only celebrations", () => {
-    const parser = new CodexTaskRecords("maximal-app")
+    const parser = new CodexTaskRecords("copo-app")
     parser.consume(
       {
         type: "session_meta",
@@ -68,7 +68,7 @@ describe("installed-client lifecycle record adapters", () => {
         type: "session_meta",
         payload: {
           id: "thread",
-          model_provider: "maximal-app",
+          model_provider: "copo-app",
           source: { subagent: { other: "guardian" } },
         },
       },

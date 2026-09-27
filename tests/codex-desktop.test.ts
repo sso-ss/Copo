@@ -8,6 +8,7 @@ import {
   isCodexEnabled,
   prepareCodexConfig,
   revertCodexConfig,
+  routingBaseForConfigure,
 } from "~/apps/codex/config"
 import { detectCodexDesktop } from "~/apps/codex/desktop-detect"
 import { getApp } from "~/apps/registry"
@@ -88,12 +89,12 @@ describe("shared Codex routing restoration", () => {
   const original =
     '# My settings\nmodel = "test-model"\nmodel_provider = "personal"\n\n[model_providers.personal]\nname = "Personal"\nbase_url = "http://localhost:9876/v1"\n'
   const provider =
-    '[model_providers."maximal-app"]\nname = "CoPo"\nbase_url = "http://127.0.0.1:4141/v1"\nwire_api = "responses"\n'
+    '[model_providers."copo-app"]\nname = "CoPo"\nbase_url = "http://127.0.0.1:4141/v1"\nwire_api = "responses"\n'
 
   test("enabling again from either client preserves the original restore point", () => {
     const enabled = prepareCodexConfig(original, provider, "test-model")
     expect(isCodexEnabled(enabled)).toBe(true)
-    expect(chooseProviderId(enabled)).toBe("maximal-app")
+    expect(chooseProviderId(enabled)).toBe("copo-app")
     const repeated = prepareCodexConfig(enabled, provider, "test-model")
     expect(repeated).toBe(enabled)
     expect(revertCodexConfig(repeated)).toBe(original)
@@ -103,7 +104,7 @@ describe("shared Codex routing restoration", () => {
   test("disabling preserves later provider and unrelated user edits", () => {
     const enabled = prepareCodexConfig(original, provider, "test-model")
     const edited = enabled
-      .replace('model_provider = "maximal-app"', 'model_provider = "personal"')
+      .replace('model_provider = "copo-app"', 'model_provider = "personal"')
       .replace("# My settings", "# Updated settings")
     expect(revertCodexConfig(edited)).toBe(
       original.replace("# My settings", "# Updated settings"),
@@ -158,14 +159,40 @@ describe("shared Codex routing restoration", () => {
 
   test("disabling preserves a managed provider still used by another profile", () => {
     const enabled = prepareCodexConfig(original, provider, "test-model")
-    const edited =
-      enabled + '\n[profiles.other]\nmodel_provider = "maximal-app"\n'
+    const edited = enabled + '\n[profiles.other]\nmodel_provider = "copo-app"\n'
     const reverted = revertCodexConfig(edited)
-    expect(reverted).toContain('[model_providers."maximal-app"]')
-    expect(reverted).toContain(
-      '[profiles.other]\nmodel_provider = "maximal-app"',
-    )
+    expect(reverted).toContain('[model_providers."copo-app"]')
+    expect(reverted).toContain('[profiles.other]\nmodel_provider = "copo-app"')
     expect(reverted).not.toContain("# maximal-codex-state:")
     expect(isCodexEnabled(reverted)).toBe(false)
+  })
+
+  test("reconfiguring a legacy provider preserves the original restore point", () => {
+    const legacyProvider = provider.replaceAll("copo-app", "maximal-app")
+    const state = {
+      version: 1,
+      provider: legacyProvider,
+      edits: [
+        {
+          keys: ["model_provider"],
+          before: 'model_provider = "personal"\n',
+          after: 'model_provider = "maximal-app"\n',
+          value: "maximal-app",
+        },
+      ],
+    }
+    const legacy =
+      original.replace(
+        'model_provider = "personal"',
+        'model_provider = "maximal-app"',
+      )
+      + `\n# >>> maximal codex >>>\n# maximal-codex-state: ${Buffer.from(JSON.stringify(state)).toString("base64")}\n${legacyProvider}# <<< maximal codex <<<\n`
+    const base = routingBaseForConfigure(legacy)
+    expect(chooseProviderId(base)).toBe("copo-app")
+    const migrated = prepareCodexConfig(base, provider, "test-model")
+    expect(isCodexEnabled(migrated)).toBe(true)
+    expect(migrated).toContain('model_provider = "copo-app"')
+    expect(migrated).not.toContain('[model_providers."maximal-app"]')
+    expect(revertCodexConfig(migrated)).toBe(original)
   })
 })

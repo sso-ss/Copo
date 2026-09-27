@@ -45,7 +45,9 @@ setting in a terminal does not change an app launched from Finder.
 
 - Respects `CODEX_HOME`, falling back to `~/.codex/config.toml`.
 - Sets the effective `model_provider` to an available managed provider name,
-  starting with `maximal-app` and using a numbered suffix when necessary.
+  starting with `copo-app` and using a numbered suffix when necessary.
+  Reconfiguring an intact older `maximal-app` integration migrates it to the
+  CoPo name while preserving its original disconnect restore point.
   Existing provider definitions and references are preserved. If the default profile
   explicitly selects a provider, that profile's setting is changed; otherwise
   the root setting is changed. Other profiles are preserved. Explicit CLI

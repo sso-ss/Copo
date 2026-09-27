@@ -135,13 +135,13 @@ export function chooseProviderId(text: string): string {
   const owned = ownedState(text)
   if (owned) return providerIdOf(owned.state.provider)
   const document = parseConfig(text)
-  let candidate = "maximal-app"
+  let candidate = "copo-app"
   let suffix = 2
   while (
     valueAt(document, ["model_providers", candidate]) !== undefined
     || referencesProvider(document, candidate)
   ) {
-    candidate = `maximal-app-${suffix++}`
+    candidate = `copo-app-${suffix++}`
   }
   return candidate
 }
@@ -165,6 +165,16 @@ export function isCodexEnabled(text: string): boolean {
 
 export function hasCodexRouting(text: string): boolean {
   return ownedState(text) !== null
+}
+
+export function routingBaseForConfigure(text: string): string {
+  if (
+    isCodexEnabled(text)
+    && /^maximal-app(?:-\d+)?$/u.test(selectedProvider(text))
+  ) {
+    return revertCodexConfig(text)
+  }
+  return text
 }
 
 export function hasCodexAutomaticReview(text: string): boolean {
