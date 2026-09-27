@@ -61,7 +61,7 @@
     "verify:build": "bun scripts/dev/verify-build.ts"
   },
   "simple-git-hooks": {
-    "pre-commit": "bunx lint-staged"
+    "pre-commit": "PATH=\"$HOME/.bun/bin:$PATH\" bunx lint-staged"
   },
   "lint-staged": {
     "*": [
