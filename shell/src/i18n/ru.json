@@ -455,6 +455,7 @@
   "motion-puff-working": "Работает — задумчиво печатает",
   "motion-puff-sleep": "Не подключён — спит под одеялом",
   "motion-puff-hover": "При наведении — покачивание",
+  "motion-puff-success": "Задача завершена — машет лапкой и радуется",
   "motion-puff-failure": "Ошибка или прерывание — сердится",
   "motion-approval": "Нужно ручное подтверждение — спит за столом",
   "personalization-puff": "Puff"

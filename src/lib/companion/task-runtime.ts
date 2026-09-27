@@ -6,7 +6,11 @@ import { TaskTracker } from "./task-tracker"
 export const taskTracker = new TaskTracker(
   getClientActivitySnapshot().generation,
   Date.now(),
-  (event) => settingsEventBus.publish("tasks.event", event),
+  {
+    event: (event) => settingsEventBus.publish("tasks.event", event),
+    snapshot: (snapshot) =>
+      settingsEventBus.publish("tasks.snapshot", snapshot),
+  },
 )
 
 settingsEventBus.subscribe("activity.snapshot", (snapshot) => {

@@ -22,12 +22,23 @@ const event = (type: string, timestamp: number, turn = "turn") => ({
   payload: { type, turn_id: turn },
 })
 
-function fixture() {
+function fixture(sessionProvider = "copo-app") {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "copo-task-monitor-"))
   directories.push(directory)
   const file = path.join(directory, "session.jsonl")
-  fs.writeFileSync(file, line(header))
-  const tracker = new TaskTracker("g", 0)
+  fs.writeFileSync(
+    file,
+    line({
+      ...header,
+      payload: { ...header.payload, model_provider: sessionProvider },
+    }),
+  )
+  const sourceSnapshots: Array<Array<string>> = []
+  const tracker = new TaskTracker("g", 0, {
+    snapshot: (snapshot) => {
+      sourceSnapshots.push(snapshot.sources)
+    },
+  })
   let sources: Array<TaskSource> = [
     { connectionId: "codex", directory, provider: "copo-app" },
   ]
@@ -37,6 +48,7 @@ function fixture() {
     directory,
     tracker,
     monitor,
+    sourceSnapshots,
     disable: () => {
       sources = []
     },
@@ -44,6 +56,22 @@ function fixture() {
 }
 
 describe("read-only task monitor", () => {
+  test("a chat using CoPo's former provider still reports its completed turn", async () => {
+    const { file, tracker, monitor, sourceSnapshots, disable } =
+      fixture("maximal-app")
+    await monitor.poll(10)
+    expect(sourceSnapshots).toEqual([["codex"]])
+    fs.appendFileSync(file, line(event("task_started", 20)))
+    await monitor.poll(30)
+    expect(tracker.snapshot().tasks[0].status).toBe("running")
+    fs.appendFileSync(file, line(event("task_complete", 40)))
+    await monitor.poll(50)
+    expect(tracker.snapshot().tasks[0].status).toBe("completed")
+    disable()
+    await monitor.poll(60)
+    expect(sourceSnapshots).toEqual([["codex"], []])
+  })
+
   test("retained history is a baseline; newly appended task events survive request gaps and split writes", async () => {
     const { file, tracker, monitor } = fixture()
     fs.appendFileSync(

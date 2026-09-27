@@ -85,6 +85,18 @@ describe("installed-client lifecycle record adapters", () => {
     )
   })
 
+  test("Codex does not treat a different provider as CoPo's former route", () => {
+    const parser = new CodexTaskRecords("copo-app")
+    parser.consume(
+      {
+        type: "session_meta",
+        payload: { id: "thread", model_provider: "maximal" },
+      },
+      "foreign",
+    )
+    expect(parser.consume(codex("task_started", 10), "start")).toEqual([])
+  })
+
   test("Claude waits for the turn boundary and outstanding background work", () => {
     const parser = new ClaudeTaskRecords()
     const common = {

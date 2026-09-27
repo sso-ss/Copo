@@ -21,15 +21,20 @@ export class TaskTracker {
   public generation: string
   public since: number
   private publish: (event: TaskEvent) => void
+  private publishSnapshot: (snapshot: TaskSnapshot) => void
 
   constructor(
     generation: string,
     since: number,
-    publish: (event: TaskEvent) => void = () => {},
+    callbacks: {
+      event?: (event: TaskEvent) => void
+      snapshot?: (snapshot: TaskSnapshot) => void
+    } = {},
   ) {
     this.generation = generation
     this.since = since
-    this.publish = publish
+    this.publish = callbacks.event ?? (() => {})
+    this.publishSnapshot = callbacks.snapshot ?? (() => {})
   }
 
   reset(generation: string, since: number): void {
@@ -60,6 +65,7 @@ export class TaskTracker {
         this.unavailable(task.taskId, now)
       }
     }
+    this.publishSnapshot(this.snapshot())
     return true
   }
 

@@ -40,8 +40,14 @@ export class CodexTaskRecords implements TaskRecordParser {
     const row = record(value)
     const payload = record(row.payload)
     if (row.type === "session_meta") {
+      const sessionProvider = payload.model_provider
       this.eligible =
-        payload.model_provider === this.provider
+        (sessionProvider === this.provider
+          // Existing Codex chats retain the provider recorded when the chat
+          // began, even after CoPo migrates its route to copo-app.
+          || (/^copo-app(?:-\d+)?$/u.test(this.provider)
+            && typeof sessionProvider === "string"
+            && /^maximal-app(?:-\d+)?$/u.test(sessionProvider)))
         && Boolean(identifier(payload.id))
       this.parent =
         typeof payload.source === "object" && payload.source !== null

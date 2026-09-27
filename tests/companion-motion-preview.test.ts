@@ -89,7 +89,7 @@ describe("companion motion playground", () => {
     expect(player.frame()).toEqual({ pose: "sleep", phase: 0, animated: true })
   })
 
-  test("Puff's tour visits all six states and ends on manual approval", () => {
+  test("Puff's tour visits all seven states and ends on manual approval", () => {
     const player = new MotionPreview(puffMotions)
     player.playAll()
     const poses = []
@@ -102,6 +102,7 @@ describe("companion motion playground", () => {
       "focus",
       "sleep",
       "hover",
+      "success",
       "failure",
       "approval",
     ])
@@ -110,6 +111,11 @@ describe("companion motion playground", () => {
   })
 
   test("Puff retains variable frame delays, loops, and freezes with Reduce Motion", () => {
+    expect(clips.success.durations).toHaveLength(28)
+    expect(clips.success.total).toBe(5750)
+    expect(
+      puffMotions.find((motion) => motion.id === "puff-success")?.duration,
+    ).toBeGreaterThanOrEqual(clips.success.total / 1000)
     const first = clips.focus.durations[0] / 1000
     expect(puffFrame(clips.focus, first - 0.001, true)).toBe(0)
     expect(puffFrame(clips.focus, first, true)).toBe(1)
@@ -125,5 +131,8 @@ describe("companion motion playground", () => {
     player.select("approval")
     expect(player.frame().pose).toBe("approval")
     expect(puffFrame(clips.approval, 5, player.frame().animated)).toBe(0)
+    player.select("puff-success")
+    expect(player.frame().pose).toBe("success")
+    expect(puffFrame(clips.success, 5, player.frame().animated)).toBe(0)
   })
 })

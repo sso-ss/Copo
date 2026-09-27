@@ -1,4 +1,4 @@
-"""Prepare the six supplied Puff APNGs: python prepare-puff.py SOURCE_FOLDER.
+"""Prepare the seven supplied Puff APNGs: python prepare-puff.py SOURCE_FOLDER.
 
 Requires Pillow and NumPy only; generated assets are bundled at build time.
 """
@@ -17,6 +17,7 @@ CLIPS = {
     "focus": "puff-typing-with-question",
     "sleep": "puff-sleepy-blanket",
     "hover": "puff-heart-butt-wiggle",
+    "success": "puff-catlike-motion",  # 28-frame wave into cheer from the original preview.
     "failure": "puff-angry-ears-tail",
     "approval": "puff-desk-sleep",
 }

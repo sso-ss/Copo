@@ -22,12 +22,13 @@ export const previewMotions: readonly Motion[] = [
   { id: "sleep", pose: "sleep", start: 0, duration: 7 },
 ];
 
-/** Puff uses the six original clips rather than the cat's small gestures. */
+/** Puff uses the seven original clips rather than the cat's small gestures. */
 export const puffMotions: readonly Motion[] = [
   { id: "puff-idle", pose: "idle", start: 0, duration: 6 },
   { id: "puff-working", pose: "focus", start: 0, duration: 12 },
   { id: "puff-sleep", pose: "sleep", start: 0, duration: 7 },
   { id: "puff-hover", pose: "hover", start: 0, duration: 6 },
+  { id: "puff-success", pose: "success", start: 0, duration: 6 },
   { id: "puff-failure", pose: "failure", start: 0, duration: 6 },
   { id: "approval", pose: "approval", start: 0, duration: 7 },
 ];

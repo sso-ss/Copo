@@ -9,9 +9,11 @@ import { CompanionState } from "../shell/src/companion/state"
 function fixture() {
   const state = new CompanionState()
   const events: Array<TaskEvent> = []
-  const tracker = new TaskTracker("generation", 0, (event) => {
-    events.push(event)
-    state.task(event, event.task.updatedAt)
+  const tracker = new TaskTracker("generation", 0, {
+    event: (event) => {
+      events.push(event)
+      state.task(event, event.task.updatedAt)
+    },
   })
   state.update(
     {

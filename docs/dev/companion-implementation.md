@@ -374,8 +374,9 @@ Evidence and scope:
 - Codex 0.157.1 and locally recorded 0.158.0-alpha.2 use `session_meta` provider
   attribution plus `event_msg.task_started`, `task_complete`, `turn_aborted` and
   failure records. Blocking input tool calls/results provide waiting/resume.
-  Observed child turn IDs defer parent completion. Only local sessions matching
-  the currently selected managed provider are observed.
+  Observed child turn IDs defer parent completion. Local sessions matching the
+  selected managed provider or the former `maximal-app` provider name are
+  observed, so an existing chat remains visible after a routing migration.
 - Claude Code 2.1.280 installed source and local 2.1.273+ records establish that
   `system/turn_duration` follows the turn loop and Stop-hook handling. Nonzero
   pending background-agent/workflow counts withhold completion. API-error and
@@ -426,7 +427,7 @@ preference defaults to Cat for existing preference files, saves atomically with
 size/appearance, and broadcasts to open windows. The preview and desktop renderer
 load only the selected character. Failed preference saves retain the saved choice.
 
-Puff uses six supplied animations:
+Puff uses seven supplied animations:
 
 | State | Original motion |
 | --- | --- |
@@ -434,10 +435,11 @@ Puff uses six supplied animations:
 | Working | Typing with puzzled pauses |
 | Not connected | Blanket sleep |
 | Hover | Butt wiggle and heart |
+| Task completed | 28-frame wave into cheer |
 | Failed/interrupted | Angry ears and tail |
 | Waiting for approval/input | Desk sleep |
 
-Existing success events use the hello clip. Task waits have a distinct `approval`
+Task waits have a distinct `approval`
 pose; ongoing work still takes priority when another task is running. The existing
 waiting metadata includes permission requests and questions. Claude Code's owned
 PermissionRequest hook supplies manual approval waits. Codex currently supplies
@@ -447,7 +449,7 @@ lifecycle record adapter, so this change does not claim to detect those dialogs.
 `python scripts/prepare-puff.py /path/to/puff-original-motion` reproduces the bundled
 transparent atlases using Pillow and NumPy. The original APNG frame delays are
 retained. Pause freezes playback and Reduce Motion draws the first frame. Puff's
-playground lists these six clips; the cat retains its existing gesture list.
+playground lists these seven clips; the cat retains its existing gesture list.
 
 Validation: 108 focused tests passed (one optional production-build test skipped),
 shell and root TypeScript passed, native preference compatibility passed, and
