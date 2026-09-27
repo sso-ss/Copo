@@ -52,7 +52,7 @@ export interface ClientApp {
   getDetails(conflict?: AppEntry["conflict"]): Promise<AppEntry>
 
   /** Enable the proxy routing for this app (e.g. write settings / profile) */
-  enable(options?: { model?: string }): Promise<{
+  enable(options?: { model?: string; automaticReview?: boolean }): Promise<{
     success: boolean
     conflict?: AppEntry["conflict"]
     error?: "missing-api-key"

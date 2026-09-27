@@ -52,6 +52,9 @@ Change that shared implementation instead of styling each window separately.
   and `--leading-lg` line height. Active items use `--surface-control`,
   `--text-strong`, and `--weight-md`; hover and keyboard focus use the same
   neutral surface. Companion language selections keep their checkmarks.
+- Disclosure groups use the same row style and focus ring as navigation items.
+  Indent their child links and open the group when one of its pages is selected,
+  including on a direct link.
 - Group label (e.g. "Desktop app"): 12px, 500, letter-spacing
   0.02em, uppercase, color = `--text-muted`. One per group, not on
   every item.

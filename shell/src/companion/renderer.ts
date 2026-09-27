@@ -1,3 +1,4 @@
+import { createPuffRenderer } from "./puff-renderer";
 import { companionArtwork } from "../ui/styles/theme";
 import { artwork } from "./artwork";
 import type { Pose } from "./state";
@@ -6,7 +7,7 @@ type Region = { x: number; y: number; width: number; height: number };
 
 /** Port of Companion/Sources/BuddyArt.swift. Frames keep their calibrated
  * 1024 × 1040 canvas; body pixels are never stretched pose by pose. */
-export async function createRenderer(canvas: HTMLCanvasElement, artworkBase = "./artwork/"): Promise<(pose: Pose, phase: number, animated: boolean) => void> {
+async function createCatRenderer(canvas: HTMLCanvasElement, artworkBase = "./artwork/"): Promise<(pose: Pose, phase: number, animated: boolean) => void> {
   const assetUrl = (name: string) => new URL(name, new URL(artworkBase, document.baseURI));
   const frames = new Map<string, HTMLImageElement>();
   await Promise.all(artwork.map(async (name) => {
@@ -24,6 +25,7 @@ export async function createRenderer(canvas: HTMLCanvasElement, artworkBase = ".
   const cg = context;
   cg.imageSmoothingEnabled = false;
   return (pose, phase, animated) => {
+    if (pose === "approval") pose = "idle";
     const working = pose === "focus";
     const hovered = pose === "hover";
     const gestureTime = phase % 21;
@@ -126,4 +128,9 @@ export async function createRenderer(canvas: HTMLCanvasElement, artworkBase = ".
       }
     }
   };
+}
+
+/** Decode only the selected character. A broken alternate never hides the cat. */
+export function createRenderer(canvas: HTMLCanvasElement, artworkBase = "./artwork/", character: "cat" | "puff" = "cat"): Promise<(pose: Pose, phase: number, animated: boolean) => void> {
+  return character === "puff" ? createPuffRenderer(canvas, artworkBase) : createCatRenderer(canvas, artworkBase);
 }

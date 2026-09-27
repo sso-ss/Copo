@@ -14,6 +14,7 @@ import { getModelsLoadedAtMs } from "./lib/runtime-state/state"
 import { buildStatus } from "./lib/runtime-state/status"
 import { BUILD_VERSION } from "./lib/update/build-info"
 import { completionRoutes } from "./routes/chat-completions/route"
+import { createCodexRoutes } from "./routes/codex/route"
 import { debugRoutes } from "./routes/debug/route"
 import { embeddingRoutes } from "./routes/embeddings/route"
 import { internalRoutes } from "./routes/internal/route"
@@ -132,6 +133,10 @@ server.route("/settings/api", settingsApiRoutes)
 // `/ui/*` serves the settings + dashboard UI (embedded in prod, from
 // shell/dist in dev). See src/routes/ui/route.ts.
 server.route("/ui", uiRoutes)
+
+// The dedicated Codex surface enforces its local key even when generic API
+// enforcement is off. Only ordinary inference inside it needs GitHub auth.
+server.route("/codex/v1", createCodexRoutes())
 
 // Gate every upstream-touching route on the presence of a GitHub token.
 // When the sidecar boots without one, the HTTP server still listens (so

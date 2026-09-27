@@ -30,7 +30,7 @@ interface UseApps {
   refresh: () => Promise<void>;
   toggleClaudeCode: (enabled: boolean) => Promise<MutationResult>;
   toggleClaudeDesktop: (enabled: boolean) => Promise<MutationResult>;
-  toggleCodex: (enabled: boolean, desktop?: boolean) => Promise<MutationResult>;
+  toggleCodex: (enabled: boolean, desktop?: boolean, automaticReview?: boolean) => Promise<MutationResult>;
 }
 
 function sortAlpha(apps: Array<AppEntry>): Array<AppEntry> {
@@ -132,20 +132,20 @@ export function useApps(): UseApps {
   );
 
   const toggleCodex = useCallback<UseApps["toggleCodex"]>(
-    async (enabled, desktop = false) => {
+    async (enabled, desktop = false, automaticReview) => {
       const result = await apiCall(
         desktop ? {
           kind: "codex-desktop-toggle",
           method: "POST",
           path: "/settings/api/apps/codex-desktop/toggle",
-          body: { enabled },
+          body: { enabled, automaticReview },
         } : {
           kind: "codex-toggle",
           method: "POST",
           path: "/settings/api/apps/codex/toggle",
-          body: { enabled },
+          body: { enabled, automaticReview },
         },
-        { timeoutMs: 45000 },
+        { timeoutMs: 120000 },
       );
       if (!result.ok) {
         const message = humanize(result.error);

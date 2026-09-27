@@ -1,5 +1,5 @@
 import { createRenderer } from "../companion/renderer";
-import { MotionPreview, previewMotions } from "../companion/motion-preview";
+import { MotionPreview, previewMotions, puffMotions } from "../companion/motion-preview";
 import { t } from "../i18n";
 
 /** Optional Settings-only playground. Its clock never reaches the native pet. */
@@ -19,7 +19,7 @@ export function startMotionPreview(): void {
   if (toggle.dataset.wired) return;
   toggle.dataset.wired = "true";
 
-  const player = new MotionPreview();
+  let player = new MotionPreview();
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   player.setReduced(reduced.matches);
   let draw: Awaited<ReturnType<typeof createRenderer>> | null = null;
@@ -95,13 +95,14 @@ export function startMotionPreview(): void {
     loading = true;
     error!.hidden = true;
     const current = ++generation;
+    draw = null;
     render();
     try {
-      const renderer = await createRenderer(canvas!, "./motion-artwork/");
+      const renderer = await createRenderer(canvas!, "./motion-artwork/", document.documentElement.dataset.buddyCharacter === "puff" ? "puff" : "cat");
       if (!open || current !== generation) return;
       draw = renderer;
       loading = false;
-      player.select("idle");
+      player.select(player.motions[0].id);
       render();
       runClock();
     } catch {
@@ -116,12 +117,22 @@ export function startMotionPreview(): void {
     render();
   }
 
-  for (const motion of previewMotions) {
-    const option = document.createElement("option");
-    option.value = motion.id;
-    select.append(option);
+  function selectCharacter(): void {
+    stopClock();
+    const motions = document.documentElement.dataset.buddyCharacter === "puff" ? puffMotions : previewMotions;
+    player = new MotionPreview(motions);
+    player.setReduced(reduced.matches);
+    select!.replaceChildren();
+    for (const motion of motions) {
+      const option = document.createElement("option");
+      option.value = motion.id;
+      select!.append(option);
+    }
+    localize();
+    if (open) void show();
   }
-  localize();
+  selectCharacter();
+  window.addEventListener("companion-character-changed", selectCharacter);
   toggle.addEventListener("click", () => { if (open) close(); else void show(); });
   select.addEventListener("change", () => {
     stopClock();

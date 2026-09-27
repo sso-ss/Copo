@@ -93,9 +93,17 @@ subtle borders instead of heavy outlines or large shadows.
 - Put user-facing strings in the existing localization catalogs, including
   accessible names and image alternatives.
 
-Keep the personalization introduction: “Make yourself at home.” and
-“A little companion, on your terms.” Do not duplicate a native window title
-as a large in-content heading.
+Settings page headers use the section name and a short description of what the
+user can change or view. Personalization uses “Personalization” and
+“Customize CoPo’s appearance and desktop companion.” Use the shared
+`section__title` and `section__sub` styles for every Settings page; avoid
+page-specific heading overrides. Do not duplicate a native window title as a
+large in-content heading.
+
+Keep Account, Apps, Models, Usage, and Personalization visible in Settings
+navigation. Group Endpoint and API keys under “API access”, and Logs and
+Diagnostics under “Advanced”. The groups use the shared navigation row style
+and open when a link leads to one of their pages.
 
 ## Controls and companion preview
 

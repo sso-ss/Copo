@@ -4,6 +4,7 @@ import { t } from "../i18n";
 import { startMotionPreview } from "./motion-preview";
 
 interface Preferences {
+  buddyCharacter: "cat" | "puff";
   buddySize: "small" | "medium" | "large";
   appearance: "system" | "light" | "dark";
 }
@@ -11,7 +12,7 @@ interface Preferences {
 /** Native preferences are shared across asset- and gateway-origin windows. */
 export async function startPersonalization(): Promise<void> {
   startMotionPreview();
-  let preferences: Preferences = { buddySize: "medium", appearance: "system" };
+  let preferences: Preferences = { buddySize: "medium", appearance: "system", buddyCharacter: "cat" };
   const system = matchMedia("(prefers-color-scheme: dark)");
   const controls = [...document.querySelectorAll<HTMLInputElement>("input[data-preference]")];
   const error = document.getElementById("personalization-error");
@@ -22,8 +23,18 @@ export async function startPersonalization(): Promise<void> {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
     document.documentElement.classList.toggle("dark", dark);
     if (preview) preview.dataset.buddySize = preferences.buddySize;
+    const character = preferences.buddyCharacter ?? "cat";
+    const still = preview?.querySelector<HTMLImageElement>("img");
+    if (still) {
+      const source = `./motion-artwork/${character === "puff" ? "puff/idle-still.png" : "cat-idle.png"}`;
+      if (still.getAttribute("src") !== source) still.src = source;
+    }
+    if (document.documentElement.dataset.buddyCharacter !== character) {
+      document.documentElement.dataset.buddyCharacter = character;
+      window.dispatchEvent(new Event("companion-character-changed"));
+    }
     for (const control of controls) {
-      control.checked = control.value === preferences[control.dataset.preference as keyof Preferences];
+      control.checked = control.value === (control.dataset.preference === "buddyCharacter" ? character : preferences[control.dataset.preference as keyof Preferences]);
     }
   }
   render();

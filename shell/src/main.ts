@@ -30,11 +30,11 @@ type SectionId =
 
 const SECTIONS: ReadonlyArray<SectionId> = [
   "account",
-  "usage",
   "apps",
   "endpoint",
   "api-clients",
   "models",
+  "usage",
   "personalization",
   "logs",
   "diagnostics",
@@ -49,6 +49,11 @@ function isSectionId(value: string): value is SectionId {
 function showSection(id: SectionId): void {
   for (const sec of document.querySelectorAll<HTMLElement>("[data-section]")) {
     sec.hidden = sec.dataset.section !== id;
+  }
+  for (const group of document.querySelectorAll<HTMLDetailsElement>("[data-nav-group]")) {
+    const active = !!group.querySelector(`[data-nav="${id}"]`);
+    if (active) group.open = true;
+    group.querySelector("summary")?.classList.toggle("nav__group-toggle--active", active);
   }
   for (const link of document.querySelectorAll<HTMLAnchorElement>(
     "[data-nav]",

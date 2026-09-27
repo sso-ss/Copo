@@ -41,7 +41,7 @@ export function AppsPanel(): JSX.Element {
                 app.id === "claude-desktop"
                   ? (enabled) => toggleClaudeDesktop(enabled)
                   : app.id === "codex" || app.id === "codex-desktop"
-                    ? (enabled) => toggleCodex(enabled, app.id === "codex-desktop")
+                    ? (enabled, automaticReview) => toggleCodex(enabled, app.id === "codex-desktop", automaticReview)
                     : (enabled) => toggleClaudeCode(enabled)
               }
             />

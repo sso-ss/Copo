@@ -17,7 +17,7 @@ const CLAUDE_DOWNLOAD_URL = "https://claude.ai/download";
 
 interface AppCardProps {
   app: AppEntry;
-  onConfigure: (enabled: boolean) => Promise<MutationResult>;
+  onConfigure: (enabled: boolean, automaticReview?: boolean) => Promise<MutationResult>;
 }
 
 export function AppCard({ app, onConfigure }: AppCardProps): JSX.Element {
@@ -28,6 +28,9 @@ export function AppCard({ app, onConfigure }: AppCardProps): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [installOpen, setInstallOpen] = useState(false);
   const [restartWarnOpen, setRestartWarnOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const isCodex = app.id === "codex" || app.id === "codex-desktop";
+  const automaticReview = app.enabled && app.routing?.automatic_review === true;
   const needsWindowsRestartWarning = app.id === "claude-code" && isWindows();
   const comingSoon = app.kind === "coming-soon";
   const notInstalled = app.status === "not-installed";
@@ -51,7 +54,7 @@ export function AppCard({ app, onConfigure }: AppCardProps): JSX.Element {
     }
   };
 
-  const changeConfiguration = async (enabled: boolean): Promise<void> => {
+  const changeConfiguration = async (enabled: boolean, review?: boolean): Promise<void> => {
     if (pending.current) return;
     pending.current = true;
     setBusy(true);
@@ -59,10 +62,11 @@ export function AppCard({ app, onConfigure }: AppCardProps): JSX.Element {
     try {
       // Every configure request detects the app again on the gateway. A
       // stale card cannot configure an uninstalled app, or block a new install.
-      const result = await onConfigure(enabled);
+      const result = await onConfigure(enabled, review);
       if (result.ok) {
         setInstallOpen(false);
         setRestartWarnOpen(false);
+        setReviewOpen(false);
       } else if (result.notInstalled) {
         setInstallOpen(true);
       } else {
@@ -120,6 +124,18 @@ export function AppCard({ app, onConfigure }: AppCardProps): JSX.Element {
         </p>
       )}
 
+      {isCodex && (
+        <div className="app-card__install">
+          <p className="app-card__hint">{t(automaticReview ? "apps-codex-review-configured" : "apps-codex-approval-help")}</p>
+          {!notInstalled && (
+            <Button variant="secondary" size="sm" disabled={busy}
+              onClick={() => { setError(null); setReviewOpen(true); }}>
+              {t(automaticReview ? "apps-codex-review-remove" : "apps-codex-review-setup")}
+            </Button>
+          )}
+        </div>
+      )}
+
       {(app.id === "codex" || app.id === "codex-desktop") && app.routing &&
         (app.routing.notice || (app.routing.managed && !app.enabled)) && (
           <div className="app-card__install">
@@ -133,7 +149,7 @@ export function AppCard({ app, onConfigure }: AppCardProps): JSX.Element {
             )}
           </div>
         )}
-      {!installOpen && !restartWarnOpen && errorMessage}
+      {!installOpen && !restartWarnOpen && !reviewOpen && errorMessage}
 
       {app.conflict && (
         <div className="app-card__conflict" role="status">
@@ -148,6 +164,23 @@ export function AppCard({ app, onConfigure }: AppCardProps): JSX.Element {
           </span>
         </div>
       )}
+
+      {isCodex && <ConfirmDialog
+        open={reviewOpen}
+        title={t(automaticReview ? "apps-codex-review-remove" : "apps-codex-review-setup")}
+        body={<>
+          <p>{t(automaticReview ? "apps-codex-review-remove-help" : "apps-codex-review-consent")}</p>
+          {!automaticReview && <p>{t("apps-codex-review-credentials")}</p>}
+          <p>{t("apps-codex-review-restart")}</p>
+          {errorMessage}
+        </>}
+        confirmLabel={t(automaticReview ? "apps-codex-review-remove" : "apps-codex-review-setup")}
+        cancelLabel={t("apps-close")}
+        busyLabel={t("apps-configuring")}
+        busy={busy}
+        onConfirm={() => changeConfiguration(true, !automaticReview)}
+        onCancel={() => { setReviewOpen(false); setError(null); }}
+      />}
 
       <ConfirmDialog
         open={installOpen}

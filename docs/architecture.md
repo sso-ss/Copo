@@ -114,8 +114,10 @@ See also: `docs/codegen-feedback-loops-practices.md` → Dispatch and review loo
 ## Tauri shell
 
 Codex CLI and Desktop's Settings → Apps integrations lives in `src/apps/codex/` and use
-command-backed authentication, reversible TOML edits, and a Responses request
-before enabling. See [`dev/codex-integration.md`](dev/codex-integration.md) for
+command-backed authentication by default, reversible TOML edits, and a Responses
+request before enabling. Optional automatic-review setup uses Codex ChatGPT
+authentication with a separate local key on `/codex/v1`, forwarding only the
+genuine reviewer to OpenAI; normal task requests still use Copilot. See [`dev/codex-integration.md`](dev/codex-integration.md) for
 ownership, profile precedence, and verification behavior.
 
 `shell/` is a Tauri 2 menu-bar app that wraps the proxy for non-CLI users. `bun run app:sidecar` builds the UI (`bun run build:ui`), regenerates the embed manifest, and compiles the standalone proxy binary into `shell/src-tauri/binaries/`. Tauri launches it as a sidecar bound to `127.0.0.1:4141`. The settings (React, Bun-bundled) and dashboard (vanilla) UIs live in `shell/ui/{settings,dashboard}` and are **embedded in the sidecar binary**, served by the proxy at `/ui/settings` and `/ui/dashboard` (`src/routes/ui/route.ts`) — from `shell/dist` on disk in dev, from `$bunfs` in the compiled binary. The webview windows point at those `/ui/*` URLs; legacy `/settings` and `/usage-viewer` 301-redirect to them. No Vite — Bun is the bundler.

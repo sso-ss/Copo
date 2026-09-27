@@ -3,7 +3,10 @@ import { describe, expect, test } from "bun:test"
 import {
   MotionPreview,
   previewMotions,
+  puffMotions,
 } from "../shell/src/companion/motion-preview"
+import { puffFrame } from "../shell/src/companion/puff-timing"
+import clips from "../shell/ui/companion/artwork/puff/manifest.json"
 
 describe("companion motion playground", () => {
   test("play all visits every motion once and stops after the last", () => {
@@ -84,5 +87,43 @@ describe("companion motion playground", () => {
     player.advance(Number.NaN)
     player.advance(-1)
     expect(player.frame()).toEqual({ pose: "sleep", phase: 0, animated: true })
+  })
+
+  test("Puff's tour visits all six states and ends on manual approval", () => {
+    const player = new MotionPreview(puffMotions)
+    player.playAll()
+    const poses = []
+    for (const motion of puffMotions) {
+      poses.push(player.frame().pose)
+      player.advance(motion.duration)
+    }
+    expect(poses).toEqual([
+      "idle",
+      "focus",
+      "sleep",
+      "hover",
+      "failure",
+      "approval",
+    ])
+    expect(player.finished).toBe(true)
+    expect(player.frame().pose).toBe("approval")
+  })
+
+  test("Puff retains variable frame delays, loops, and freezes with Reduce Motion", () => {
+    const first = clips.focus.durations[0] / 1000
+    expect(puffFrame(clips.focus, first - 0.001, true)).toBe(0)
+    expect(puffFrame(clips.focus, first, true)).toBe(1)
+    expect(puffFrame(clips.focus, clips.focus.total / 1000, true)).toBe(0)
+    const player = new MotionPreview(puffMotions)
+    player.select("puff-working")
+    player.advance(first + 0.01)
+    player.pause()
+    const frame = player.frame()
+    player.advance(10)
+    expect(player.frame()).toEqual(frame)
+    player.setReduced(true)
+    player.select("approval")
+    expect(player.frame().pose).toBe("approval")
+    expect(puffFrame(clips.approval, 5, player.frame().animated)).toBe(0)
   })
 })

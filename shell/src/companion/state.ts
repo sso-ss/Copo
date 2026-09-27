@@ -3,7 +3,7 @@ import type { ClientActivitySnapshot, ClientRequestEvent } from "../../../src/li
 import type { TaskEvent, TaskSnapshot } from "../../../src/lib/companion/task-types";
 import { CompanionTasks } from "./task-state";
 
-export type Pose = "sleep" | "idle" | "focus" | "success" | "failure" | "hover";
+export type Pose = "sleep" | "idle" | "focus" | "success" | "failure" | "hover" | "approval";
 
 const SUCCESS_REACTION_MS = 10000;
 
@@ -159,7 +159,7 @@ export class CompanionState {
     if (this.data?.gateway === "sign-in-required") return { pose: "sleep", key: "companion-sign-in-required" };
     if (this.data?.gateway === "upstream-error") return this.reaction?.pose === "failure" ? this.reaction : { pose: "sleep", key: "companion-upstream-error" };
     if (this.running > 0) return { pose: "focus", key: "companion-working" };
-    if (this.tasks.waiting > 0) return { pose: "idle", key: "companion-task-waiting" };
+    if (this.tasks.waiting > 0) return { pose: "approval", key: "companion-task-waiting" };
     if (this.reaction) return this.reaction;
     if (this.ready > 0) return { pose: "idle", key: "companion-ready" };
     return { pose: "sleep", key: this.configured > 0 ? "companion-waiting" : "companion-no-tools" };

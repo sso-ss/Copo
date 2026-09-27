@@ -8,14 +8,28 @@ import { resolveApiKey } from "~/lib/auth/api-key-helper"
 import { sendProviderRequest } from "~/lib/http/send-request"
 import { PATHS } from "~/lib/platform/paths"
 
-import { CODEX_BASE_URL, selectedProvider } from "./config"
+import {
+  CODEX_BASE_URL,
+  CODEX_REVIEW_BASE_URL,
+  selectedProvider,
+} from "./config"
 import { parseConfig, valueAt } from "./toml"
 
-const Provider = z.object({
-  base_url: z.literal(CODEX_BASE_URL),
-  wire_api: z.literal("responses"),
-  auth: z.object({ command: z.string(), args: z.array(z.string()) }),
-})
+const Provider = z.union([
+  z.object({
+    base_url: z.literal(CODEX_BASE_URL),
+    wire_api: z.literal("responses"),
+    auth: z.object({ command: z.string(), args: z.array(z.string()) }),
+  }),
+  z.object({
+    base_url: z.literal(CODEX_REVIEW_BASE_URL),
+    wire_api: z.literal("responses"),
+    requires_openai_auth: z.literal(true),
+    // This validates a saved configuration; it does not attach a wire header.
+    // eslint-disable-next-line no-restricted-syntax
+    http_headers: z.object({ "x-api-key": z.string().min(1) }),
+  }),
+])
 
 function helperCommand(): { command: string; args: Array<string> } {
   const executable = process.execPath
@@ -53,7 +67,26 @@ function helperCommand(): { command: string; args: Array<string> } {
   }
 }
 
-export function codexProvider(providerId: string): string {
+export function codexProvider(
+  providerId: string,
+  automaticReview = false,
+): string {
+  if (automaticReview) {
+    const resolved = resolveApiKey("codex")
+    if (!resolved.ok)
+      throw new Error("Add an enabled API client key in CoPo Settings first.")
+    return [
+      `[model_providers.${JSON.stringify(providerId)}]`,
+      'name = "CoPo"',
+      `base_url = ${JSON.stringify(CODEX_REVIEW_BASE_URL)}`,
+      `model_catalog_url = ${JSON.stringify(`${CODEX_REVIEW_BASE_URL}/models`)}`,
+      'wire_api = "responses"',
+      "requires_openai_auth = true",
+      "supports_websockets = false",
+      `http_headers = { "x-api-key" = ${JSON.stringify(resolved.key)} }`,
+      "",
+    ].join("\n")
+  }
   const helper = helperCommand()
   return [
     `[model_providers.${JSON.stringify(providerId)}]`,
@@ -107,14 +140,17 @@ export async function verifyCodexProvider(
   const provider = Provider.parse(
     valueAt(parseConfig(text), ["model_providers", selectedProvider(text)]),
   )
-  const key = await readHelperKey(provider.auth.command, provider.auth.args)
+  const key =
+    "auth" in provider ?
+      await readHelperKey(provider.auth.command, provider.auth.args)
+    : provider.http_headers["x-api-key"]
   let response: Response
   try {
     response = await sendProviderRequest(
       {
         baseUrl: provider.base_url,
         apiKey: key,
-        authType: "authorization",
+        authType: "auth" in provider ? "authorization" : "x-api-key",
       },
       `${provider.base_url}/responses`,
       {

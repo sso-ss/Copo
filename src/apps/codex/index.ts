@@ -13,6 +13,7 @@ import {
   chooseProviderId,
   configuredModel,
   hasCodexRouting,
+  hasCodexAutomaticReview,
   hasUnmanagedProvider,
   isCodexEnabled,
   prepareCodexConfig,
@@ -23,6 +24,7 @@ import {
 import { detectCodexDesktop } from "./desktop-detect"
 import { detectCodex } from "./detect"
 import { codexProvider, verifyCodexProvider } from "./provider"
+import { verifyCodexAutomaticReview } from "./verify-review"
 
 const routingLock = new Set<string>()
 const EXISTING_SETUP_NOTICE =
@@ -61,6 +63,36 @@ function disableRouting(): boolean {
   return before !== after
 }
 
+async function enableRouting(
+  options: Parameters<ClientApp["enable"]>[0],
+): Promise<{ success: boolean }> {
+  const before = readCodexConfig()
+  const model = options?.model ?? configuredModel(before)
+  if (!model)
+    throw new Error(
+      "Set a model in your Codex configuration before enabling routing.",
+    )
+  const models = availableModels()
+  if (models.length > 0 && !models.includes(model)) {
+    throw new Error(
+      "Your configured Codex model is not available through CoPo's Responses API. Set a supported model in your Codex configuration, then try again.",
+    )
+  }
+  const after = prepareCodexConfig(
+    before,
+    codexProvider(
+      chooseProviderId(before),
+      options?.automaticReview ?? hasCodexAutomaticReview(before),
+    ),
+    model,
+  )
+  if (after === before) return { success: true }
+  await verifyCodexProvider(after, model)
+  if (hasCodexAutomaticReview(after)) await verifyCodexAutomaticReview()
+  writeCodexConfig(before, after)
+  return { success: true }
+}
+
 interface CodexAppOptions {
   detectInstalls: () => Promise<Array<AppInstall>>
   installHint: AppInstallHint | null
@@ -87,11 +119,13 @@ function createCodexApp(
       let enabled = false
       let managed = false
       let model: string | null = null
+      let automaticReview = false
       let notice: string | undefined
       try {
         const text = readCodexConfig()
         managed = hasCodexRouting(text)
         enabled = isCodexEnabled(text)
+        automaticReview = hasCodexAutomaticReview(text)
         model = configuredModel(text)
         if (hasUnmanagedProvider(text)) {
           notice = EXISTING_SETUP_NOTICE
@@ -115,6 +149,7 @@ function createCodexApp(
           model,
           available_models: availableModels(),
           managed,
+          automatic_review: automaticReview,
           notice,
           uses_existing_setup: notice === EXISTING_SETUP_NOTICE,
         },
@@ -127,27 +162,7 @@ function createCodexApp(
           throw new Error(
             "Install Codex CLI or Desktop first, then enable routing.",
           )
-        const before = readCodexConfig()
-        const model = options?.model ?? configuredModel(before)
-        if (!model)
-          throw new Error(
-            "Set a model in your Codex configuration before enabling routing.",
-          )
-        const models = availableModels()
-        if (models.length > 0 && !models.includes(model)) {
-          throw new Error(
-            "Your configured Codex model is not available through CoPo's Responses API. Set a supported model in your Codex configuration, then try again.",
-          )
-        }
-        const after = prepareCodexConfig(
-          before,
-          codexProvider(chooseProviderId(before)),
-          model,
-        )
-        if (after === before) return { success: true }
-        await verifyCodexProvider(after, model)
-        writeCodexConfig(before, after)
-        return { success: true }
+        return enableRouting(options)
       })
     },
 

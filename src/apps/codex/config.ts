@@ -8,6 +8,7 @@ import { z } from "zod"
 import { findSetting, parseConfig, replaceSetting, valueAt } from "./toml"
 
 export const CODEX_BASE_URL = "http://127.0.0.1:4141/v1"
+export const CODEX_REVIEW_BASE_URL = "http://127.0.0.1:4141/codex/v1"
 const START = "# >>> maximal codex >>>"
 const END = "# <<< maximal codex <<<"
 const STATE = "# maximal-codex-state: "
@@ -32,6 +33,11 @@ const RoutingState = z.object({
 })
 
 type RoutingState = z.infer<typeof RoutingState>
+
+function routingBlock(state: RoutingState): string {
+  const metadata = Buffer.from(JSON.stringify(state)).toString("base64")
+  return `\n${START}\n${STATE}${metadata}\n${state.provider}${END}\n`
+}
 
 export function codexConfigPath(): string {
   return path.join(
@@ -161,6 +167,17 @@ export function hasCodexRouting(text: string): boolean {
   return ownedState(text) !== null
 }
 
+export function hasCodexAutomaticReview(text: string): boolean {
+  return (
+    isCodexEnabled(text)
+    && valueAt(parseConfig(text), [
+      "model_providers",
+      selectedProvider(text),
+      "requires_openai_auth",
+    ]) === true
+  )
+}
+
 export function hasUnmanagedProvider(text: string): boolean {
   return (
     !hasCodexRouting(text)
@@ -172,13 +189,39 @@ export function hasUnmanagedProvider(text: string): boolean {
   )
 }
 
+function matchesManagedSelection(
+  text: string,
+  provider: string,
+  model: string,
+): boolean {
+  return (
+    isCodexEnabled(text)
+    && configuredModel(text) === model
+    && providerIdOf(provider) === chooseProviderId(text)
+  )
+}
+
 export function prepareCodexConfig(
   text: string,
   provider: string,
   model: string,
 ): string {
-  if (ownedState(text)) {
-    if (isCodexEnabled(text) && configuredModel(text) === model) return text
+  const owned = ownedState(text)
+  if (owned) {
+    if (matchesManagedSelection(text, provider, model)) {
+      if (provider === owned.state.provider) return text
+      if (owned.block !== routingBlock(owned.state)) {
+        throw new Error(
+          "The managed Codex block was edited. Disconnect it before changing automatic reviews.",
+        )
+      }
+      // Change only our intact provider block, preserving the original scalar
+      // restore point and later user edits. Never adopt user-edited providers.
+      const nextState = { ...owned.state, provider }
+      const next = text.replace(owned.block, routingBlock(nextState))
+      parseConfig(next)
+      return next
+    }
     throw new Error(
       "Codex routing has changed. Switch it off before enabling it again.",
     )
@@ -203,8 +246,7 @@ export function prepareCodexConfig(
     next = replaceSetting(next, keys, { replacement: after, value })
     state.edits.push({ keys, before, after, value })
   }
-  const metadata = Buffer.from(JSON.stringify(state)).toString("base64")
-  next += `\n${START}\n${STATE}${metadata}\n${provider}${END}\n`
+  next += routingBlock(state)
   const expected = parseConfig(text)
   const restored = revertCodexConfig(next)
   if (
@@ -257,7 +299,7 @@ export function revertCodexConfig(text: string): string {
     valueAt(document, ["model_providers", providerId]),
     valueAt(parseConfig(owned.state.provider), ["model_providers", providerId]),
   )
-  const exactBlock = `\n${START}\n${STATE}${Buffer.from(JSON.stringify(owned.state)).toString("base64")}\n${owned.state.provider}${END}\n`
+  const exactBlock = routingBlock(owned.state)
   next =
     (
       providerIsOurs

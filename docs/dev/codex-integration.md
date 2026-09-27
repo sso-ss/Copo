@@ -1,9 +1,9 @@
 # Codex CLI and desktop routing
 
-Settings → Apps → Codex CLI and Desktop uses one switch for both clients.
+Settings → Apps → Codex CLI and Desktop uses Configure and Disconnect for both clients.
 It detects the CLI on PATH and in common install locations, as well as supported
-macOS desktop installs. Install either client and connect your account in Maximal
-before switching routing on. Apps uses the model saved in your Codex
+macOS desktop installs. Install either client and connect your account in CoPo
+before configuring routing. Apps uses the model saved in your Codex
 configuration without displaying or changing it. If that model is missing or
 unsupported, configure a supported model in Codex and try again.
 
@@ -27,7 +27,7 @@ contain the bundled Codex executable; older chat-only apps do not qualify.
 Desktop detection on Windows and Linux is not implemented.
 
 Desktop and CLI share the same user configuration and therefore the same
-routing state. One switch controls both and lists their detected install paths.
+routing state. One configuration controls both and lists their detected install paths.
 Enabling uses the same verification, authentication helper, and restoration metadata. Disabling
 restores the settings from before the first enable; it does not save a second
 backup of already-routed settings. Restart the desktop app and create a new
@@ -87,8 +87,9 @@ already-enabled, unchanged selection does not send another verification request.
 Codex's [official configuration reference](https://developers.openai.com/codex/config-reference/)
 documents `model_providers.<id>.auth.command`, `auth.args`, `auth.timeout_ms`,
 and `auth.refresh_interval_ms`. Command auth must not be combined with
-`env_key`, `experimental_bearer_token`, or `requires_openai_auth`. The
-integration writes none of these competing authentication settings.
+`env_key`, `experimental_bearer_token`, or `requires_openai_auth`. The default
+integration writes none of these competing authentication settings. The optional
+automatic-review setup uses `requires_openai_auth` instead of command auth.
 
 ## Validation scope
 
@@ -97,11 +98,83 @@ tests use in-memory TOML, including repeated enable and user edits made while
 routing is active. The live routing check runs when enabling the integration;
 development checks do not change the developer's Codex configuration.
 
-## Companion task observations
+## Automatic approval compatibility
 
-The gateway observes newly appended local Codex session lifecycle records only
-when their provider matches the managed selected provider. Task starts, input
-waits, terminal outcomes and observed child turns are independent of inference
-request accounting. Existing history never triggers celebrations. This local
-record contract is version-sensitive; remote/cloud sessions and unknown event
-shapes are outside its scope. See [lifecycle evidence and limitations](companion-implementation.md#local-task-lifecycle--september-26-2026).
+GitHub Copilot does not serve `codex-auto-review`. The default command-auth
+integration therefore cannot run Codex permission reviews. Settings → Apps →
+Codex now offers **Set up automatic reviews** as a separate, explicit choice.
+It keeps regular tasks on Copilot while forwarding the exact review model to
+OpenAI through the user's normal Codex ChatGPT login.
+
+### Routing and authentication
+
+- The optional provider uses `http://127.0.0.1:4141/codex/v1`,
+  `requires_openai_auth = true`, and `supports_websockets = false`.
+- Codex supplies its ChatGPT bearer using the documented proxy authentication
+  flow. CoPo never opens private login files or saves that bearer. Platform API
+  key logins are not supported by this setup; setup requires a ChatGPT login.
+- A separate `x-api-key` authenticates the local CoPo connection. In this mode
+  only, CoPo writes its local key into the private, atomically saved Codex
+  configuration (including the managed restoration block). This replaces the
+  default mode's command helper. Rotate a local key by configuring Codex again.
+- `/codex/v1` always requires an enabled CoPo key, including when the generic
+  endpoint's “block unknown connections” setting is off. A CoPo key cannot be
+  used as the upstream bearer.
+- `/codex/v1/models` forwards the genuine Codex catalog, retaining hidden
+  reviewer entries and policy metadata. It can advertise models unavailable on
+  Copilot; ordinary task requests are still validated against Copilot's catalog.
+- Only the exact `codex-auto-review` model branches to OpenAI, before tool
+  rewriting, model normalization, prompt logging, compaction, or usage capture.
+  Other models use the existing Copilot handler and its GitHub authentication.
+- Review payload bytes, status codes, and stream events pass through unchanged.
+  Errors, timeouts, cancellations, and denials never become approvals or trigger
+  another model. Review requests do not enter Copilot usage accounting.
+- Request headers are allowlisted. CoPo keys, GitHub tokens, and cookies are not
+  forwarded to OpenAI; ChatGPT credentials are not forwarded to Copilot.
+  Upstream redirects are rejected. Review transport has a 120-second bound and
+  propagates the incoming request's cancellation.
+
+### Setup and restoration
+
+Setup explains that review context goes to OpenAI and may consume Codex quota.
+It checks the selected Copilot model, the live Codex catalog, and a minimal
+non-stored `codex-auto-review` response before saving. A temporary loopback
+callback receives authentication through `codex debug models`; it uses a random
+path, never prints secrets, and closes afterward. A cached catalog alone cannot
+pass the check. No saved Codex settings change if a check fails.
+
+Switching review mode replaces only an intact managed provider block. It keeps
+the restore point from the original Configure operation, preserves later user
+edits, and refuses to adopt an edited provider. **Disconnect automatic reviews**
+returns to command authentication while keeping task routing on Copilot.
+**Disconnect** restores the pre-CoPo configuration using the existing ownership
+rules. The API accepts `{ enabled: true, automaticReview: true | false }`;
+omitting `automaticReview` preserves the current mode. This setup does not
+change approval policy or the user's automatic/manual approval preference.
+
+Restart Codex and create a new local chat after changing this setup. Existing
+chats can retain their earlier provider. A connection check is not evidence of
+an end-to-end automatic approval decision.
+
+### Evidence and limitations
+
+Verified with Codex CLI 0.157.1 on September 26, 2026:
+
+- The [official authentication guide](https://developers.openai.com/codex/auth/)
+  documents using `requires_openai_auth` to pass normal Codex authentication
+  through an LLM proxy.
+- The [official configuration schema](https://developers.openai.com/codex/config-schema.json)
+  provides provider headers and a custom model catalog URL. `review_model`
+  controls code review, not permission approval; no separate permission-review
+  provider field was found. The integration does not change either review policy
+  or reviewer model metadata.
+- A live probe using normal ChatGPT sign-in received HTTP 200 and a completed
+  response from the genuine `codex-auto-review` model.
+- The fixed backend `https://chatgpt.com/backend-api/codex` was verified against
+  the installed client and the live probe. It is a Codex client backend, **not a
+  separately documented public Platform API contract**; future client/backend
+  changes may require an integration update.
+- Automated route tests cover authentication, exact matching, unchanged
+  payloads/catalogs, failures, denials, cancellation, and normal Copilot routing.
+  A real automatic permission decision in a restarted desktop chat still needs
+  verification. Building source does not update an installed desktop app.

@@ -29,6 +29,7 @@ let busy = false;
 let toggling = false;
 let signingOut = false;
 let renderArt: Awaited<ReturnType<typeof createRenderer>> | null = null;
+let artFailed = false;
 const profileMenu = createProfileMenu(async (tag) => {
   try { await invoke("set_locale", { tag }); updateLocale(tag); } catch { showError(); }
 });
@@ -137,7 +138,7 @@ element("primary").addEventListener("click", () => void settings(state.data?.acc
 function paint(): void {
   if (!isPanel) element("hint").hidden = hintSeen || !state.available || state.configured > 0 || state.running > 0;
   const display = state.display(Date.now());
-  const status = t(display.key);
+  const status = t(artFailed ? "companion-art-error" : display.key);
   element("pet-status").textContent = status;
   element("panel-status").textContent = status;
   cat.setAttribute("aria-label", t("companion-cat-label", { status }));
@@ -340,9 +341,25 @@ async function start(): Promise<void> {
 }
 
 if (!isPanel) {
-  void createRenderer(element<HTMLCanvasElement>("art")).then((renderer) => { renderArt = renderer; paint(); }).catch(() => {
-    element("pet-status").textContent = t("companion-art-error");
-  });
+  let generation = 0;
+  const loadCharacter = async (): Promise<void> => {
+    const current = ++generation;
+    renderArt = null;
+    artFailed = false;
+    const canvas = element<HTMLCanvasElement>("art");
+    canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+    try {
+      const character = document.documentElement.dataset.buddyCharacter === "puff" ? "puff" : "cat";
+      const renderer = await createRenderer(canvas, "./artwork/", character);
+      if (current !== generation) return;
+      renderArt = renderer;
+      paint();
+    } catch {
+      if (current === generation) { artFailed = true; paint(); }
+    }
+  };
+  window.addEventListener("companion-character-changed", () => void loadCharacter());
+  void loadCharacter();
 }
 setInterval(() => {
   if (Date.now() - streamSeen > 30000) state.disconnect(Date.now());

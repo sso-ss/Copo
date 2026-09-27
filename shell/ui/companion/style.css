@@ -58,3 +58,5 @@ footer { margin-top: auto; padding-top: var(--space-5); display: grid; gap: var(
 .connection-switch { margin-inline-start: auto; }
 
 .brand-logo { width: var(--size-2xl); height: var(--size-2xl); }
+
+[data-buddy-character="puff"] #art { image-rendering: auto; }

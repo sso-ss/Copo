@@ -75,7 +75,7 @@ describe("whole-task companion state", () => {
     send("started", 10)
     send("waiting", 20)
     expect(state.display(20)).toEqual({
-      pose: "idle",
+      pose: "approval",
       key: "companion-task-waiting",
     })
     send("running", 30)

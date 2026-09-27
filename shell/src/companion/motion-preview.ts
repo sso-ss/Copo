@@ -22,6 +22,16 @@ export const previewMotions: readonly Motion[] = [
   { id: "sleep", pose: "sleep", start: 0, duration: 7 },
 ];
 
+/** Puff uses the six original clips rather than the cat's small gestures. */
+export const puffMotions: readonly Motion[] = [
+  { id: "puff-idle", pose: "idle", start: 0, duration: 6 },
+  { id: "puff-working", pose: "focus", start: 0, duration: 12 },
+  { id: "puff-sleep", pose: "sleep", start: 0, duration: 7 },
+  { id: "puff-hover", pose: "hover", start: 0, duration: 6 },
+  { id: "puff-failure", pose: "failure", start: 0, duration: 6 },
+  { id: "approval", pose: "approval", start: 0, duration: 7 },
+];
+
 /** A local playback clock; never reads or changes live tool/companion state. */
 export class MotionPreview {
   private index = 0;
@@ -31,10 +41,14 @@ export class MotionPreview {
   reduced = false;
   finished = false;
 
-  get motion(): Motion { return previewMotions[this.index]; }
+  readonly motions: readonly Motion[];
+
+  constructor(motions: readonly Motion[] = previewMotions) { this.motions = motions; }
+
+  get motion(): Motion { return this.motions[this.index]; }
 
   select(id: string): void {
-    const index = previewMotions.findIndex((motion) => motion.id === id);
+    const index = this.motions.findIndex((motion) => motion.id === id);
     if (index < 0) return;
     this.index = index;
     this.elapsed = 0;
@@ -45,7 +59,7 @@ export class MotionPreview {
 
   playAll(): void {
     if (this.reduced) return;
-    this.select(previewMotions[0].id);
+    this.select(this.motions[0].id);
     this.touring = true;
   }
 
@@ -68,7 +82,7 @@ export class MotionPreview {
     if (!this.playing || !Number.isFinite(seconds) || seconds <= 0) return;
     this.elapsed += seconds;
     while (this.touring && this.elapsed >= this.motion.duration) {
-      if (this.index === previewMotions.length - 1) {
+      if (this.index === this.motions.length - 1) {
         this.elapsed = this.motion.duration;
         this.touring = false;
         this.playing = false;

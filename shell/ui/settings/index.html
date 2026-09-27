@@ -34,28 +34,52 @@
               <a class="nav__item" href="#account" data-nav="account" data-i18n="nav-account"></a>
             </li>
             <li>
-              <a class="nav__item" href="#usage" data-nav="usage" data-i18n="nav-usage"></a>
-            </li>
-            <li>
               <a class="nav__item" href="#apps" data-nav="apps" data-i18n="nav-apps"></a>
             </li>
-            <li>
-              <a class="nav__item" href="#endpoint" data-nav="endpoint" data-i18n="nav-endpoint"></a>
-            </li>
-            <li>
-              <a class="nav__item" href="#api-clients" data-nav="api-clients" data-i18n="nav-api-clients"></a>
+            <li class="nav__group">
+              <details data-nav-group="api-access">
+                <summary class="nav__item nav__group-toggle">
+                  <span data-i18n="nav-api-access"></span>
+                  <svg class="nav__chevron" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </summary>
+                <ul class="nav nav__sublist">
+                  <li>
+                    <a class="nav__item" href="#endpoint" data-nav="endpoint" data-i18n="nav-endpoint"></a>
+                  </li>
+                  <li>
+                    <a class="nav__item" href="#api-clients" data-nav="api-clients" data-i18n="nav-api-clients"></a>
+                  </li>
+                </ul>
+              </details>
             </li>
             <li>
               <a class="nav__item" href="#models" data-nav="models" data-i18n="nav-models"></a>
             </li>
             <li>
+              <a class="nav__item" href="#usage" data-nav="usage" data-i18n="nav-usage"></a>
+            </li>
+            <li>
               <a class="nav__item" href="#personalization" data-nav="personalization" data-i18n="nav-personalization"></a>
             </li>
-            <li>
-              <a class="nav__item" href="#logs" data-nav="logs" data-i18n="nav-logs"></a>
-            </li>
-            <li>
-              <a class="nav__item" href="#diagnostics" data-nav="diagnostics" data-i18n="nav-diagnostics"></a>
+            <li class="nav__group nav__group--advanced">
+              <details data-nav-group="advanced">
+                <summary class="nav__item nav__group-toggle">
+                  <span data-i18n="nav-advanced"></span>
+                  <svg class="nav__chevron" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </summary>
+                <ul class="nav nav__sublist">
+                  <li>
+                    <a class="nav__item" href="#logs" data-nav="logs" data-i18n="nav-logs"></a>
+                  </li>
+                  <li>
+                    <a class="nav__item" href="#diagnostics" data-nav="diagnostics" data-i18n="nav-diagnostics"></a>
+                  </li>
+                </ul>
+              </details>
             </li>
           </ul>
 
@@ -72,7 +96,7 @@
         <main class="pane" id="pane">
           <section class="section" data-section="personalization" hidden>
             <header class="section__head">
-              <h2 class="section__title personalization-title" data-i18n="personalization-title"></h2>
+              <h2 class="section__title" data-i18n="nav-personalization"></h2>
               <p class="section__sub" data-i18n="personalization-sub"></p>
             </header>
             <div class="personalization-options">
@@ -99,6 +123,13 @@
                 </div>
                 <p id="motion-error" class="state__caption state__caption--error" role="alert" data-i18n="motion-load-error" hidden></p>
               </div>
+              <fieldset class="personalization-field">
+                <legend data-i18n="personalization-character"></legend>
+                <div class="personalization-segments">
+                  <label><input type="radio" name="buddy-character" data-preference="buddyCharacter" value="cat" checked disabled><span data-i18n="personalization-cat"></span></label>
+                  <label><input type="radio" name="buddy-character" data-preference="buddyCharacter" value="puff" disabled><span data-i18n="personalization-puff"></span></label>
+                </div>
+              </fieldset>
               <fieldset class="personalization-field">
                 <legend data-i18n="personalization-appearance"></legend>
                 <div class="personalization-segments">

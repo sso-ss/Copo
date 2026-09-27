@@ -92,7 +92,10 @@ for (const id of ["codex", "codex-desktop"] as const) {
         await c.req.json().catch(() => null),
       )
       if (!parsed.success)
-        throw httpError("Expected { enabled: boolean, model?: string }", 400)
+        throw httpError(
+          "Expected { enabled: boolean, model?: string, automaticReview?: boolean }",
+          400,
+        )
       const app = getApp(id)
       if (!app) throw httpError("App not found", 404)
       if (parsed.data.enabled && !(await app.detect())) {
@@ -108,7 +111,10 @@ for (const id of ["codex", "codex-desktop"] as const) {
       }
       try {
         await (parsed.data.enabled ?
-          app.enable({ model: parsed.data.model })
+          app.enable({
+            model: parsed.data.model,
+            automaticReview: parsed.data.automaticReview,
+          })
         : app.disable())
       } catch (error) {
         throw httpError(

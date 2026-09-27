@@ -177,9 +177,17 @@ function overlayScript(): string {
     <span style="opacity:.7">Scenario</span>
     <select id="__harness-scn" style="background:#26262b;color:#fafafa;border:1px solid #555;border-radius:6px;padding:3px 6px">${opts}</select>
   </label>
+  <label>Appearance
+    <select id="__harness-theme"><option value="light">Light</option><option value="dark">Dark</option></select>
+  </label>
 </div>
 <script>
 (function(){
+  var theme=document.getElementById('__harness-theme');
+  theme.addEventListener('change',function(){
+    document.documentElement.dataset.theme=theme.value;
+    document.documentElement.classList.toggle('dark',theme.value==='dark');
+  });
   var sel=document.getElementById('__harness-scn');
   sel.addEventListener('change',function(){
     fetch('/__harness/scenario',{method:'POST',headers:{'content-type':'application/json'},
@@ -260,7 +268,8 @@ async function handleApi(req: Request, path: string): Promise<Response> {
 
   if ((path === "/settings/api/apps/codex/toggle" ||
        path === "/settings/api/apps/codex-desktop/toggle") && method === "POST") {
-    return toggleApp(path.split("/")[4], (await body()).enabled)
+    const request = await body()
+    return toggleApp(path.split("/")[4], request.enabled, request.automaticReview)
   }
 
   // --- models refresh (just re-stamp loaded_at) ---
@@ -321,7 +330,7 @@ async function handleApi(req: Request, path: string): Promise<Response> {
   return json({ error: { message: `harness: unhandled ${method} ${path}` } }, 404)
 }
 
-function toggleApp(id: string, enabled: boolean): Response {
+function toggleApp(id: string, enabled: boolean, automaticReview?: boolean): Response {
   const apps = (state.apps as any).apps as Array<any>
   const app = apps.find((a) => a.id === id)
   if (!app) return json({ error: { message: "no such app" } }, 404)
@@ -331,6 +340,7 @@ function toggleApp(id: string, enabled: boolean): Response {
       if (entry.id !== "codex" && entry.id !== "codex-desktop") continue
       entry.enabled = enabled
       entry.routing.managed = enabled
+      entry.routing.automatic_review = enabled && (automaticReview ?? entry.routing.automatic_review ?? false)
     }
   }
   return json(app)

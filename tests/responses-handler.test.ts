@@ -46,6 +46,14 @@ function createApp(): Hono {
   return app
 }
 
+async function requestModel(model: string): Promise<Response> {
+  return createApp().request("/v1/responses", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ model, input: "hello", stream: true }),
+  })
+}
+
 async function* streamChunks(items: Array<Record<string, unknown>>) {
   await Promise.resolve()
   for (const item of items) {
@@ -92,6 +100,96 @@ afterEach(async () => {
   state.rateLimitWait = originalState.rateLimitWait
   state.lastRequestTimestamp = originalState.lastRequestTimestamp
   state.models = originalState.models
+})
+
+describe("responses model availability", () => {
+  test("reports an unavailable catalog separately from an unavailable model", async () => {
+    state.models = undefined
+
+    const response = await requestModel("gpt-test")
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      error: { type: "server_error", code: "models_unavailable" },
+    })
+    expect(createResponses).not.toHaveBeenCalled()
+  })
+
+  test.each(["unknown-model", "codex-auto-review"])(
+    "rejects unavailable %s without substituting or sending an upstream request",
+    async (model) => {
+      const response = await requestModel(model)
+
+      expect(response.status).toBe(400)
+      const body = (await response.json()) as { error: { message: string } }
+      expect(body).toMatchObject({
+        error: {
+          type: "invalid_request_error",
+          code: "model_not_found",
+          param: "model",
+        },
+      })
+      expect(body.error.message).toContain(model)
+      expect(body.error.message).not.toContain("does not support the responses")
+      if (model === "codex-auto-review") {
+        expect(body.error.message).toContain("approval review could not run")
+        expect(body.error.message).toContain("manual approval")
+      }
+      expect(createResponses).not.toHaveBeenCalled()
+    },
+  )
+
+  test.each([{ endpoints: ["/chat/completions"] }, { endpoints: undefined }])(
+    "distinguishes a known model without Responses support (%j)",
+    async ({ endpoints }) => {
+      const model = state.models?.data[0]
+      if (!model) throw new Error("Missing test model")
+      model.supported_endpoints = endpoints ? [...endpoints] : undefined
+
+      const response = await requestModel("gpt-test")
+
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({
+        error: {
+          type: "invalid_request_error",
+          code: "unsupported_endpoint",
+          param: "model",
+        },
+      })
+      expect(createResponses).not.toHaveBeenCalled()
+    },
+  )
+
+  test("forwards a supported model unchanged and completes its response", async () => {
+    createResponses.mockImplementation(() =>
+      Promise.resolve(
+        streamChunks([
+          {
+            event: "response.completed",
+            data: JSON.stringify({
+              type: "response.completed",
+              response: {
+                id: "resp_supported",
+                model: "gpt-test",
+                status: "completed",
+                output: [],
+              },
+            }),
+          },
+        ]),
+      ),
+    )
+
+    const response = await requestModel("gpt-test")
+
+    expect(response.status).toBe(200)
+    expect(await response.text()).toContain('"status":"completed"')
+    expect(createResponses).toHaveBeenCalledTimes(1)
+    expect(createResponses).toHaveBeenCalledWith(
+      expect.objectContaining({ model: "gpt-test", input: "hello" }),
+      expect.anything(),
+    )
+  })
 })
 
 describe("responses handler token usage", () => {

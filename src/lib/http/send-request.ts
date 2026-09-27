@@ -180,6 +180,26 @@ export async function sendProviderRequest(
   return dispatch(url, merged, init)
 }
 
+/** Setup probe only: Codex's login credential and CoPo's local credential go
+ * together only to this fixed loopback gateway, never a caller-chosen URL. */
+export function sendCodexGatewayRequest(
+  credentials: { localKey: string; chatgptToken: string },
+  endpoint: "models" | "responses",
+  init: SendRequestInit & { clientVersion?: string } = {},
+): Promise<Response> {
+  const { clientVersion, ...requestInit } = init
+  const headers = new Headers(init.headers)
+  headers.set("x-api-key", credentials.localKey)
+  headers.set("authorization", `Bearer ${credentials.chatgptToken}`)
+  const url = new URL(`http://127.0.0.1:4141/codex/v1/${endpoint}`)
+  if (endpoint === "models" && clientVersion)
+    url.searchParams.set("client_version", clientVersion)
+  return dispatch(url.toString(), headers, {
+    ...requestInit,
+    redirect: "error",
+  })
+}
+
 /**
  * Convenience for the auth/discovery shape: a bounded (or unbounded) read, an
  * `ok` check that throws `HTTPError`, and a JSON parse. Callers with bespoke

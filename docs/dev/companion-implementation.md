@@ -366,7 +366,7 @@ and `tasks.event`, forwarded by the native subscriber. Account resets send the
 activity generation before its task baseline. Each task has an opaque tool ID,
 connection, optional parent, status and timestamps. Snapshots do not replay happy
 poses. Ordered live completion holds happiness for ten seconds; new work or a
-gateway problem interrupts it. Input waits are idle, cancellation/failure is a
+gateway problem interrupts it. Input waits use the approval pose (the cat retains its idle artwork), cancellation/failure is a
 stopped reaction, and missing evidence never becomes success.
 
 Evidence and scope:
@@ -417,3 +417,52 @@ The running app was not restarted. Quit/reopen CoPo, then start a fresh Claude
 Code session to load its updated observers. Live visual and real-client
 end-to-end acceptance remain pending; no full PRD acceptance is claimed.
 i18n wording review remains required before landing per `CONTRIBUTORS.md`.
+
+
+### Puff personalization — September 26, 2026
+
+Settings → Personalization now offers Tuxi (the cat) and Puff. The native `buddyCharacter`
+preference defaults to Cat for existing preference files, saves atomically with
+size/appearance, and broadcasts to open windows. The preview and desktop renderer
+load only the selected character. Failed preference saves retain the saved choice.
+
+Puff uses six supplied animations:
+
+| State | Original motion |
+| --- | --- |
+| Idle | Hello expression |
+| Working | Typing with puzzled pauses |
+| Not connected | Blanket sleep |
+| Hover | Butt wiggle and heart |
+| Failed/interrupted | Angry ears and tail |
+| Waiting for approval/input | Desk sleep |
+
+Existing success events use the hello clip. Task waits have a distinct `approval`
+pose; ongoing work still takes priority when another task is running. The existing
+waiting metadata includes permission requests and questions. Claude Code's owned
+PermissionRequest hook supplies manual approval waits. Codex currently supplies
+blocking input-tool waits; its native approval dialogs do not have an established
+lifecycle record adapter, so this change does not claim to detect those dialogs.
+
+`python scripts/prepare-puff.py /path/to/puff-original-motion` reproduces the bundled
+transparent atlases using Pillow and NumPy. The original APNG frame delays are
+retained. Pause freezes playback and Reduce Motion draws the first frame. Puff's
+playground lists these six clips; the cat retains its existing gesture list.
+
+Validation: 108 focused tests passed (one optional production-build test skipped),
+shell and root TypeScript passed, native preference compatibility passed, and
+design-token checks passed. The route tests used an empty temporary
+`CLAUDE_CONFIG_DIR` to avoid reading the installed Claude settings. The broad lint
+gate found an existing complexity violation in `src/apps/codex/config.ts`; focused
+lint for changed tests passed.
+
+Browser checks verified Cat/Puff switching, all six motion choices, pause, dark
+appearance, failed-save rollback, reload persistence, and the largest Puff size
+at the 600 × 560 minimum window. The mock bridge was injected only into the
+isolated preview build and is absent from production source. A final translated
+screen check was blocked when automatic approval review again failed because its
+reviewer model does not support Responses. Reduced motion was covered by playback
+tests; native desktop acceptance remains outstanding. This is source/web-bundle
+work plus a successful release app build at
+`shell/src-tauri/target/release/bundle/macos/CoPo.app`; the installed desktop
+application has not been replaced or restarted.

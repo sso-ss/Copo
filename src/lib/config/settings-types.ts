@@ -389,6 +389,7 @@ export const AppEntry = z.object({
       managed: z.boolean(),
       notice: z.string().optional(),
       uses_existing_setup: z.boolean().optional(),
+      automatic_review: z.boolean().optional(),
     })
     .optional(),
 })
@@ -405,6 +406,7 @@ export const ClaudeCodeToggleRequest = z.object({
 export const CodexToggleRequest = z.object({
   enabled: z.boolean(),
   model: z.string().trim().min(1).max(200).optional(),
+  automaticReview: z.boolean().optional(),
 })
 export type ClaudeCodeToggleRequest = z.infer<typeof ClaudeCodeToggleRequest>
 
