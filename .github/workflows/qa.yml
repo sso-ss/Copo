@@ -1,0 +1,82 @@
+name: CoPo QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Create or update GitHub issues for reproduced failures
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: copo-qa
+  cancel-in-progress: false
+
+jobs:
+  review:
+    # Run manually on the default branch. PR code never receives issue-write access.
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: ./.github/actions/setup-bun
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - name: Verify QA tooling
+        run: bun run qa:typecheck
+      - name: Backend, code, and browser review
+        run: bun run qa --no-ai --out reports/qa/actions
+      - name: Save QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: copo-qa
+          path: reports/qa/actions
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: review
+    if: always() && inputs.publish && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.review.result != 'skipped' && needs.review.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-bun
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          name: copo-qa
+          path: reports/qa/actions
+      - name: Publish reproduced findings
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QA_REPOSITORY: ${{ github.repository }}
+        run: bun run qa --publish-only --repo "$QA_REPOSITORY" --out reports/qa/actions
+      - name: Save publication results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: copo-qa-publications
+          path: reports/qa/actions/report.*
+          retention-days: 14
