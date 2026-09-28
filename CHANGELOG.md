@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased
+
+### Codex connection reviews (2026-09-27)
+
+* **codex:** configure native automatic reviews through Copilot as part of Connect Codex, using Astra review metadata across supported task models. Preserve custom catalogs, authentication, approval preferences, and disconnect restore points; validate installed client compatibility before saving and show restart guidance. Existing connections use Update connection. This supersedes the earlier optional ChatGPT review setup and limitation recorded below.
+
+### Tuxi and Puff companion changes (2026-09-26)
+
+* **personalization:** name the cat Tuxi and add Puff as a second desktop buddy choice. Save the selected buddy and show it in Settings and the desktop companion.
+* **companion:** add Puff's original animations for idle, working, disconnected, hover, failed or interrupted, and waiting for manual approval. Include all six in Try motions, with still artwork for reduced motion.
+
+### Separate changes carried over from the forked checkout
+
+The entries below were present in the forked checkout's changelog. They are separate from the Tuxi and Puff companion changes above.
+
+#### Features
+
+* **settings:** group Endpoint and API keys under API access, and Logs and Diagnostics under Advanced. Groups open automatically when one of their pages is selected.
+* **codex:** add optional automatic-review setup using the genuine Codex reviewer through ChatGPT while ordinary tasks stay on Copilot. Verify both connections before saving, keep credentials separate, and preserve the original configuration for disconnect. Include setup guidance in all ten full language catalogs.
+
+#### Bug Fixes
+
+* **personalization:** use the same title and description style as other Settings pages.
+* **responses:** distinguish unavailable models, models without Responses support, and an unavailable model catalog. Explain when the missing `codex-auto-review` model prevents an approval review from running.
+
+#### Known limitations
+
+* **codex:** automatic-review setup currently requires ChatGPT sign-in and uses the Codex client backend. Restart Codex and start a new local chat after configuring it. Live model connectivity is verified; an end-to-end automatic permission decision in the installed app remains to be tested. See the [compatibility notes](docs/dev/codex-integration.md#automatic-approval-compatibility).
+
 ## [0.4.44](https://github.com/stuffbucket/maximal/compare/v0.4.43...v0.4.44) (2026-09-21)
 
 
