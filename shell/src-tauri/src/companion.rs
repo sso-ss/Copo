@@ -250,9 +250,9 @@ fn toggle_target(id: &str) -> Result<(reqwest::Method, String), String> {
 }
 
 #[tauri::command]
-pub async fn companion_toggle(app: AppHandle, id: String, enabled: bool) -> Result<(), String> {
+pub async fn companion_toggle(app: AppHandle, id: String, enabled: bool) -> Result<bool, String> {
     let (method, path) = toggle_target(&id)?;
-    let client = reqwest::Client::builder().timeout(Duration::from_secs(60)).build()
+    let client = reqwest::Client::builder().timeout(Duration::from_secs(240)).build()
         .map_err(|_| "Connection change failed")?;
     let response = client.request(method, format!("http://127.0.0.1:{SIDECAR_PORT}/settings/api/{path}"))
         .header("x-api-key", app.state::<ShellApiKey>().value())
@@ -264,7 +264,7 @@ pub async fn companion_toggle(app: AppHandle, id: String, enabled: bool) -> Resu
     let body: Value = response.json().await.map_err(|_| "Connection change failed")?;
     validate_toggle_response(&id, enabled, status, &body)?;
     let _ = app.emit("companion:stream", json!({"kind": "refresh"}));
-    Ok(())
+    Ok(body["routing"]["restart_required"].as_bool().unwrap_or(false))
 }
 
 fn validate_toggle_response(id: &str, enabled: bool, status: reqwest::StatusCode, body: &Value) -> Result<(), String> {

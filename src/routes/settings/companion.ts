@@ -17,6 +17,7 @@ import { getClientActivitySnapshot } from "~/lib/http/client-activity"
 import { state } from "~/lib/runtime-state/state"
 
 import { claudeTaskHookRoutes } from "./claude-task-hook"
+import { codexTaskHookRoutes } from "./codex-task-hook"
 
 function appConnection(
   app: ClientApp,
@@ -81,6 +82,7 @@ function connectionsFor(
 
 export const companionRoutes = new Hono()
 companionRoutes.route("/claude-hook", claudeTaskHookRoutes)
+companionRoutes.route("/codex-hook", codexTaskHookRoutes)
 
 companionRoutes.get("/", (c) => {
   try {

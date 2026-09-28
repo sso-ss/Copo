@@ -172,7 +172,7 @@ function overlayScript(): string {
 <div id="__harness" style="position:fixed;z-index:99999;right:12px;bottom:12px;
   font:12px/1.4 ui-sans-serif,system-ui;background:#1b1b1f;color:#fafafa;
   border:1px solid #444;border-radius:10px;padding:10px 12px;box-shadow:0 6px 24px #0008;opacity:.95">
-  <div style="font-weight:700;margin-bottom:6px;letter-spacing:.02em">⚗ UI harness — mock backend</div>
+  <details open><summary style="font-weight:700;margin-bottom:6px;letter-spacing:.02em;cursor:pointer">⚗ UI harness — mock backend</summary>
   <label style="display:flex;gap:8px;align-items:center">
     <span style="opacity:.7">Scenario</span>
     <select id="__harness-scn" style="background:#26262b;color:#fafafa;border:1px solid #555;border-radius:6px;padding:3px 6px">${opts}</select>
@@ -180,6 +180,7 @@ function overlayScript(): string {
   <label>Appearance
     <select id="__harness-theme"><option value="light">Light</option><option value="dark">Dark</option></select>
   </label>
+  </details>
 </div>
 <script>
 (function(){
@@ -234,6 +235,7 @@ async function handleApi(req: Request, path: string): Promise<Response> {
   if (path === "/settings/api/apps") return json(state.apps)
   if (path === "/settings/api/models" && method === "GET") return json(state.models)
   if (path === "/settings/api/gh/status") return json(SCENARIOS[activeScenario].ghStatus)
+  if (path === "/settings/api/clients/activity") return json({ activity: [] })
   if (path.startsWith("/settings/api/clients")) return json({ clients: [] })
 
   // --- auth lifecycle (drive the device-code flow + sign out) ---

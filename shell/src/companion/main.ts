@@ -27,6 +27,7 @@ let refreshPending = false;
 let streamSeen = Date.now();
 let busy = false;
 let toggling = false;
+let codexRestartRequired = false;
 let signingOut = false;
 let renderArt: Awaited<ReturnType<typeof createRenderer>> | null = null;
 let artFailed = false;
@@ -158,7 +159,8 @@ async function toggleConnection(connection: CompanionConnection): Promise<void> 
   element("action-error").hidden = true;
   panel();
   try {
-    await invoke("companion_toggle", { id: connection.id, enabled: !connection.configured });
+    const restartRequired = await invoke<boolean>("companion_toggle", { id: connection.id, enabled: !connection.configured });
+    if (connection.id === "codex" && restartRequired) codexRestartRequired = true;
   } catch (error) { showError(error); }
   finally {
     await refresh();
@@ -256,6 +258,7 @@ function panel(): void {
     const note = document.createElement("p");
     note.className = "connection-note";
     note.textContent = t(state.tasks.data?.sources.includes(connection.id) ? "companion-task-monitoring" : connection.shared ? "companion-shared" : "companion-request-only");
+    if (connection.id === "codex" && codexRestartRequired) note.textContent = t("apps-codex-review-restart");
     const verification = document.createElement("p");
     verification.className = "connection-note";
     verification.textContent = t(state.connected(connection) ? "companion-verified" : "companion-verify-help");

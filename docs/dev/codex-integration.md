@@ -100,6 +100,37 @@ tests use in-memory TOML, including repeated enable and user edits made while
 routing is active. The live routing check runs when enabling the integration;
 development checks do not change the developer's Codex configuration.
 
+## Companion approval animation
+
+Configure also adds a separately marked, reversible block of observer hooks to
+the shared Codex configuration. `PermissionRequest` reports a real approval wait
+to CoPo; Puff uses its laptop-sleep animation. `UserPromptSubmit` establishes the
+turn, `PostToolUse` returns it to running when tool output arrives, and `Interrupt`
+cancels it. The existing local lifecycle monitor remains responsible for task
+completion. These hooks never return approval decisions or change permission
+policy. Another running task still takes visual priority over a waiting task.
+
+After updating CoPo, update the existing Codex connection, then
+start a new Codex session. Review and trust CoPo's observer hooks with `/hooks`
+in Codex CLI. Codex skips new or changed hooks until their exact definitions have
+been trusted; CoPo does not bypass that requirement or override disabled hooks.
+CLI and Desktop use the same user configuration. See the official
+[Codex hooks documentation](https://learn.chatgpt.com/docs/hooks#permissionrequest).
+
+The helper validates the session/provider using bounded local transcript
+metadata and sends only event identity and timestamps to authenticated loopback.
+It excludes child sessions, foreign providers, and transcripts outside the local
+sessions directory. Prompt text, commands and tool output are discarded. Missing
+metadata or an unavailable CoPo process makes the observer fail quietly.
+Disconnect removes an unchanged CoPo hook block; user hooks and edited blocks
+survive. Claude Desktop remains request-only and has no approval observer.
+
+The hook contract and configuration were checked against the official docs and
+installed Codex CLI 0.157.1. Automated tests cover permission-to-pose transitions,
+resume/cancellation, authentication, attribution, and reversible configuration.
+Native approval-dialog playback still requires verification after hooks are
+trusted in the updated installed app.
+
 ## Automatic approval compatibility
 
 **Connect Codex includes native Copilot reviewer configuration.** There is no

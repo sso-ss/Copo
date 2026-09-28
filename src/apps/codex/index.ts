@@ -35,6 +35,7 @@ import {
   withoutReviewCatalog,
   writeReviewCatalog,
 } from "./review-catalog"
+import { withCodexTaskHooks, withoutCodexTaskHooks } from "./task-hooks"
 
 const routingLock = new Set<string>()
 const EXISTING_SETUP_NOTICE =
@@ -68,7 +69,9 @@ function availableModels(): Array<string> {
 
 function disableRouting(): boolean {
   const before = readCodexConfig()
-  const after = withoutReviewCatalog(revertCodexConfig(before))
+  const after = withoutCodexTaskHooks(
+    withoutReviewCatalog(revertCodexConfig(before)),
+  )
   writeCodexConfig(before, after)
   return before !== after
 }
@@ -99,7 +102,7 @@ async function enableRouting(
   )
   // Already-current connections do not consume quota or rewrite snapshots.
   const catalogWasCurrent = reviewCatalogIsCurrent(before, installs, models)
-  if (catalogWasCurrent && after === before) {
+  if (catalogWasCurrent && withCodexTaskHooks(after) === before) {
     return { success: true, restartRequired: false }
   }
   const catalog = await prepareReviewCatalog(after, {
@@ -107,8 +110,8 @@ async function enableRouting(
     availableModels: models,
     selectedModel: model,
   })
-  const configured = catalog.config
-  const changed = configured !== before || !catalogWasCurrent
+  const withHooks = withCodexTaskHooks(catalog.config)
+  const changed = withHooks !== before || !catalogWasCurrent
   if (changed) {
     await verifyProvider(after, model)
     if (model !== COPILOT_REVIEW_MODEL)
@@ -116,7 +119,7 @@ async function enableRouting(
   }
   writeReviewCatalog(catalog)
   catalog.checkUnchanged()
-  writeCodexConfig(before, configured)
+  writeCodexConfig(before, withHooks)
   return { success: true, restartRequired: changed }
 }
 

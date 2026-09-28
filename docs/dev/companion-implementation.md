@@ -442,9 +442,11 @@ Puff uses seven supplied animations:
 Task waits have a distinct `approval`
 pose; ongoing work still takes priority when another task is running. The existing
 waiting metadata includes permission requests and questions. Claude Code's owned
-PermissionRequest hook supplies manual approval waits. Codex currently supplies
-blocking input-tool waits; its native approval dialogs do not have an established
-lifecycle record adapter, so this change does not claim to detect those dialogs.
+PermissionRequest hook supplies manual approval waits. Codex supplies blocking
+input-tool waits, and now also has owned permission-request hooks described in
+[Codex approval animation setup](codex-integration.md#companion-approval-animation).
+The new hooks require configuration and Codex's hook trust review before they
+can report native approval waits. Packaged/live acceptance remains pending.
 
 `python scripts/prepare-puff.py /path/to/puff-original-motion` reproduces the bundled
 transparent atlases using Pillow and NumPy. The original APNG frame delays are

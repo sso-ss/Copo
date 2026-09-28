@@ -98,6 +98,8 @@ const main = defineCommand({
     app: () => import("./apps/cli").then((m) => m.appCommand),
     "task-hook": () =>
       import("./lib/companion/claude-hook").then((m) => m.taskHookCommand),
+    "codex-task-hook": () =>
+      import("./lib/companion/codex-hook").then((m) => m.codexTaskHookCommand),
     // Keyed by HELPER_SUBCOMMAND so the on-disk `<bin> api <client>` token and
     // the command citty dispatches share one source of truth (no drift).
     [HELPER_SUBCOMMAND]: () => import("./apps/cli").then((m) => m.apiCommand),
