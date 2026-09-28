@@ -8,7 +8,6 @@ import { z } from "zod"
 import { findSetting, parseConfig, replaceSetting, valueAt } from "./toml"
 
 export const CODEX_BASE_URL = "http://127.0.0.1:4141/v1"
-export const CODEX_REVIEW_BASE_URL = "http://127.0.0.1:4141/codex/v1"
 const START = "# >>> maximal codex >>>"
 const END = "# <<< maximal codex <<<"
 const STATE = "# maximal-codex-state: "
@@ -177,17 +176,6 @@ export function routingBaseForConfigure(text: string): string {
   return text
 }
 
-export function hasCodexAutomaticReview(text: string): boolean {
-  return (
-    isCodexEnabled(text)
-    && valueAt(parseConfig(text), [
-      "model_providers",
-      selectedProvider(text),
-      "requires_openai_auth",
-    ]) === true
-  )
-}
-
 export function hasUnmanagedProvider(text: string): boolean {
   return (
     !hasCodexRouting(text)
@@ -222,7 +210,7 @@ export function prepareCodexConfig(
       if (provider === owned.state.provider) return text
       if (owned.block !== routingBlock(owned.state)) {
         throw new Error(
-          "The managed Codex block was edited. Disconnect it before changing automatic reviews.",
+          "The managed Codex block was edited. Disconnect it before updating the connection.",
         )
       }
       // Change only our intact provider block, preserving the original scalar

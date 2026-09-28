@@ -467,3 +467,47 @@ test("missing Codex returns installation help before applying any settings", asy
     enable.mockRestore()
   }
 })
+
+test.each([undefined, true, false])(
+  "Codex connect configures native reviews regardless of legacy flag %s",
+  async (automaticReview) => {
+    const { codexApp } = await import("~/apps/codex")
+    const detect = spyOn(codexApp, "detect").mockResolvedValue(true)
+    const enable = spyOn(codexApp, "enable").mockResolvedValue({
+      success: true,
+      restartRequired: true,
+    })
+    const details = spyOn(codexApp, "getDetails").mockResolvedValue({
+      id: "codex",
+      name: "Codex CLI and Desktop",
+      kind: "config",
+      enabled: true,
+      status: "ready",
+      installs: [],
+      install: null,
+      conflict: null,
+      routing: {
+        model: "gpt-6-luna",
+        available_models: [],
+        managed: true,
+        automatic_review: true,
+      },
+    })
+    try {
+      const response = await buildApp().request("/apps/codex/toggle", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: true, automaticReview }),
+      })
+      expect(response.status).toBe(200)
+      expect(enable).toHaveBeenCalledWith({ model: undefined })
+      expect(await response.json()).toMatchObject({
+        routing: { restart_required: true },
+      })
+    } finally {
+      detect.mockRestore()
+      enable.mockRestore()
+      details.mockRestore()
+    }
+  },
+)

@@ -21,6 +21,7 @@ export interface MutationResult {
   ok: boolean;
   error?: string;
   notInstalled?: boolean;
+  restartRequired?: boolean;
 }
 
 interface UseApps {
@@ -30,7 +31,7 @@ interface UseApps {
   refresh: () => Promise<void>;
   toggleClaudeCode: (enabled: boolean) => Promise<MutationResult>;
   toggleClaudeDesktop: (enabled: boolean) => Promise<MutationResult>;
-  toggleCodex: (enabled: boolean, desktop?: boolean, automaticReview?: boolean) => Promise<MutationResult>;
+  toggleCodex: (enabled: boolean, desktop?: boolean) => Promise<MutationResult>;
 }
 
 function sortAlpha(apps: Array<AppEntry>): Array<AppEntry> {
@@ -132,20 +133,20 @@ export function useApps(): UseApps {
   );
 
   const toggleCodex = useCallback<UseApps["toggleCodex"]>(
-    async (enabled, desktop = false, automaticReview) => {
+    async (enabled, desktop = false) => {
       const result = await apiCall(
         desktop ? {
           kind: "codex-desktop-toggle",
           method: "POST",
           path: "/settings/api/apps/codex-desktop/toggle",
-          body: { enabled, automaticReview },
+          body: { enabled },
         } : {
           kind: "codex-toggle",
           method: "POST",
           path: "/settings/api/apps/codex/toggle",
-          body: { enabled, automaticReview },
+          body: { enabled },
         },
-        { timeoutMs: 120000 },
+        { timeoutMs: 240000 },
       );
       if (!result.ok) {
         const message = humanize(result.error);
@@ -156,7 +157,7 @@ export function useApps(): UseApps {
       setError(null);
       splice(result.data);
       await refresh();
-      return { ok: true };
+      return { ok: true, restartRequired: result.data.routing?.restart_required };
     },
     [refresh, splice],
   );

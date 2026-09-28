@@ -40,6 +40,7 @@ export interface Scenario {
   diagnostics: DiagnosticsResponse
   updateStatus: UpdateStatusResponse
   ghStatus: GhStatusFixture
+  codexToggle?: { delayMs?: number; error?: string }
 }
 
 const ISO = (offsetMs = 0): string => new Date(1_750_000_000_000 + offsetMs).toISOString()
@@ -191,8 +192,42 @@ const ghAvailable: GhStatusFixture = {
   ],
 }
 
+function codexScenario(label: string, enabled: boolean, error?: string): Scenario {
+  return {
+    label,
+    auth: { state: "authenticated", account_login: "octocat", connected_since: ISO(-7_265_000) },
+    apps: {
+      apps: appsAllInstalled.apps.map((app) => app.id === "codex" ? {
+        ...app,
+        enabled,
+        routing: {
+          model: "gpt-6-luna",
+          available_models: ["gpt-6-luna", "gpt-6-sol", "gpt-6-astra"],
+          managed: enabled,
+          automatic_review: false,
+          review_update_required: enabled,
+        },
+      } : app),
+    },
+    apiKeys: twoApiKeys,
+    accounts: twoAccounts,
+    models: baseModels,
+    diagnostics: baseDiagnostics,
+    updateStatus: upToDate,
+    ghStatus: ghAvailable,
+    codexToggle: { delayMs: 5000, error },
+  }
+}
+
 // ---- the scenarios ---------------------------------------------------------
 export const SCENARIOS = {
+  "codex-connect": codexScenario("Apps · Codex connection check", false),
+  "codex-update": codexScenario("Apps · Codex update needed", true),
+  "codex-update-error": codexScenario(
+    "Apps · Codex update failure",
+    true,
+    "Codex could not load its offline review catalog. Update Codex CLI and Desktop, then configure the connection again. No settings were changed.",
+  ),
   "signed-in": {
     label: "Signed in · healthy",
     auth: {

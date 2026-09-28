@@ -8,12 +8,12 @@ import { state } from "~/lib/runtime-state/state"
 
 import type { ClientApp } from "../index"
 
+import { COPILOT_REVIEW_MODEL } from "./catalog-runtime"
 import {
   codexConfigPath,
   chooseProviderId,
   configuredModel,
   hasCodexRouting,
-  hasCodexAutomaticReview,
   hasUnmanagedProvider,
   isCodexEnabled,
   prepareCodexConfig,
@@ -24,8 +24,17 @@ import {
 } from "./config"
 import { detectCodexDesktop } from "./desktop-detect"
 import { detectCodex } from "./detect"
-import { codexProvider, verifyCodexProvider } from "./provider"
-import { verifyCodexAutomaticReview } from "./verify-review"
+import {
+  codexProvider,
+  readCodexGatewayModels,
+  verifyCodexProvider,
+} from "./provider"
+import {
+  prepareReviewCatalog,
+  reviewCatalogIsCurrent,
+  withoutReviewCatalog,
+  writeReviewCatalog,
+} from "./review-catalog"
 
 const routingLock = new Set<string>()
 const EXISTING_SETUP_NOTICE =
@@ -59,22 +68,25 @@ function availableModels(): Array<string> {
 
 function disableRouting(): boolean {
   const before = readCodexConfig()
-  const after = revertCodexConfig(before)
+  const after = withoutReviewCatalog(revertCodexConfig(before))
   writeCodexConfig(before, after)
   return before !== after
 }
 
 async function enableRouting(
   options: Parameters<ClientApp["enable"]>[0],
-): Promise<{ success: boolean }> {
+  installs: Array<AppInstall>,
+  verifyProvider: typeof verifyCodexProvider,
+): Promise<{ success: boolean; restartRequired: boolean }> {
   const before = readCodexConfig()
   const model = options?.model ?? configuredModel(before)
   if (!model)
     throw new Error(
       "Set a model in your Codex configuration before enabling routing.",
     )
-  const models = availableModels()
-  if (models.length > 0 && !models.includes(model)) {
+  const models =
+    state.models ? availableModels() : await readCodexGatewayModels()
+  if (!models.includes(model)) {
     throw new Error(
       "Your configured Codex model is not available through CoPo's Responses API. Set a supported model in your Codex configuration, then try again.",
     )
@@ -82,30 +94,44 @@ async function enableRouting(
   const routingBase = routingBaseForConfigure(before)
   const after = prepareCodexConfig(
     routingBase,
-    codexProvider(
-      chooseProviderId(routingBase),
-      options?.automaticReview ?? hasCodexAutomaticReview(before),
-    ),
+    codexProvider(chooseProviderId(routingBase)),
     model,
   )
-  if (after === before) return { success: true }
-  await verifyCodexProvider(after, model)
-  if (hasCodexAutomaticReview(after)) await verifyCodexAutomaticReview()
-  writeCodexConfig(before, after)
-  return { success: true }
+  // Already-current connections do not consume quota or rewrite snapshots.
+  const catalogWasCurrent = reviewCatalogIsCurrent(before, installs, models)
+  if (catalogWasCurrent && after === before) {
+    return { success: true, restartRequired: false }
+  }
+  const catalog = await prepareReviewCatalog(after, {
+    installs,
+    availableModels: models,
+    selectedModel: model,
+  })
+  const configured = catalog.config
+  const changed = configured !== before || !catalogWasCurrent
+  if (changed) {
+    await verifyProvider(after, model)
+    if (model !== COPILOT_REVIEW_MODEL)
+      await verifyProvider(after, COPILOT_REVIEW_MODEL)
+  }
+  writeReviewCatalog(catalog)
+  catalog.checkUnchanged()
+  writeCodexConfig(before, configured)
+  return { success: true, restartRequired: changed }
 }
 
 interface CodexAppOptions {
   detectInstalls: () => Promise<Array<AppInstall>>
   installHint: AppInstallHint | null
+  verifyProvider?: typeof verifyCodexProvider
 }
 
-function createCodexApp(
+export function createCodexApp(
   id: "codex" | "codex-desktop",
   name: string,
-  options: CodexAppOptions,
+  optionsForApp: CodexAppOptions,
 ): ClientApp {
-  const { detectInstalls, installHint } = options
+  const { detectInstalls, installHint } = optionsForApp
   return {
     id,
     name,
@@ -127,7 +153,11 @@ function createCodexApp(
         const text = readCodexConfig()
         managed = hasCodexRouting(text)
         enabled = isCodexEnabled(text)
-        automaticReview = hasCodexAutomaticReview(text)
+        automaticReview = reviewCatalogIsCurrent(
+          text,
+          installs,
+          availableModels(),
+        )
         model = configuredModel(text)
         if (hasUnmanagedProvider(text)) {
           notice = EXISTING_SETUP_NOTICE
@@ -152,6 +182,7 @@ function createCodexApp(
           available_models: availableModels(),
           managed,
           automatic_review: automaticReview,
+          review_update_required: enabled && !automaticReview,
           notice,
           uses_existing_setup: notice === EXISTING_SETUP_NOTICE,
         },
@@ -160,16 +191,24 @@ function createCodexApp(
 
     enable(options) {
       return mutateRouting(async () => {
-        if (!(await this.detect()))
+        const installs = await detectInstalls()
+        if (installs.length === 0)
           throw new Error(
             "Install Codex CLI or Desktop first, then enable routing.",
           )
-        return enableRouting(options)
+        return enableRouting(
+          options,
+          installs,
+          optionsForApp.verifyProvider ?? verifyCodexProvider,
+        )
       })
     },
 
     disable() {
-      return mutateRouting(() => Promise.resolve({ success: disableRouting() }))
+      return mutateRouting(() => {
+        const changed = disableRouting()
+        return Promise.resolve({ success: changed, restartRequired: changed })
+      })
     },
 
     uninstall() {
@@ -190,14 +229,17 @@ function createCodexApp(
   }
 }
 
+async function detectInstalls(): Promise<Array<AppInstall>> {
+  return (await Promise.all([detectCodex(), detectCodexDesktop()])).flat()
+}
+
 export const codexApp = createCodexApp("codex", "Codex CLI and Desktop", {
-  detectInstalls: async () =>
-    (await Promise.all([detectCodex(), detectCodexDesktop()])).flat(),
+  detectInstalls,
   installHint: { method: "npm", command: "npm install -g @openai/codex" },
 })
 
 export const codexDesktopApp = createCodexApp(
   "codex-desktop",
   "Codex Desktop",
-  { detectInstalls: detectCodexDesktop, installHint: null },
+  { detectInstalls, installHint: null },
 )

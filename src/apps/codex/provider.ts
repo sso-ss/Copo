@@ -8,28 +8,55 @@ import { resolveApiKey } from "~/lib/auth/api-key-helper"
 import { sendProviderRequest } from "~/lib/http/send-request"
 import { PATHS } from "~/lib/platform/paths"
 
-import {
-  CODEX_BASE_URL,
-  CODEX_REVIEW_BASE_URL,
-  selectedProvider,
-} from "./config"
+import { CODEX_BASE_URL, selectedProvider } from "./config"
 import { parseConfig, valueAt } from "./toml"
 
-const Provider = z.union([
-  z.object({
-    base_url: z.literal(CODEX_BASE_URL),
-    wire_api: z.literal("responses"),
-    auth: z.object({ command: z.string(), args: z.array(z.string()) }),
-  }),
-  z.object({
-    base_url: z.literal(CODEX_REVIEW_BASE_URL),
-    wire_api: z.literal("responses"),
-    requires_openai_auth: z.literal(true),
-    // This validates a saved configuration; it does not attach a wire header.
-    // eslint-disable-next-line no-restricted-syntax
-    http_headers: z.object({ "x-api-key": z.string().min(1) }),
-  }),
-])
+const Provider = z.object({
+  base_url: z.literal(CODEX_BASE_URL),
+  wire_api: z.literal("responses"),
+  auth: z.object({ command: z.string(), args: z.array(z.string()) }),
+})
+
+/** Standalone CLI invocations have no in-process Copilot model cache. Read the
+ * running gateway's filtered task model list without touching GitHub auth. */
+export async function readCodexGatewayModels(): Promise<Array<string>> {
+  const key = resolveApiKey("codex")
+  if (!key.ok)
+    throw new Error(
+      "Add an enabled API client key in CoPo Settings before connecting Codex.",
+    )
+  try {
+    const response = await sendProviderRequest(
+      { baseUrl: CODEX_BASE_URL, apiKey: key.key, authType: "authorization" },
+      "http://127.0.0.1:4141/settings/api/apps",
+      { method: "GET", timeoutMs: 10000, redirect: "error" },
+    )
+    if (!response.ok) {
+      await response.body?.cancel()
+      throw new Error()
+    }
+    const result = z
+      .object({
+        apps: z.array(
+          z.object({
+            id: z.string(),
+            routing: z
+              .object({ available_models: z.array(z.string()) })
+              .optional(),
+          }),
+        ),
+      })
+      .parse(await response.json())
+    const models = result.apps.find((app) => app.id === "codex")?.routing
+      ?.available_models
+    if (!models?.length) throw new Error()
+    return models
+  } catch {
+    throw new Error(
+      "Could not read CoPo's supported Codex models. Start CoPo, connect your account, and try again.",
+    )
+  }
+}
 
 function helperCommand(): { command: string; args: Array<string> } {
   const executable = process.execPath
@@ -67,26 +94,7 @@ function helperCommand(): { command: string; args: Array<string> } {
   }
 }
 
-export function codexProvider(
-  providerId: string,
-  automaticReview = false,
-): string {
-  if (automaticReview) {
-    const resolved = resolveApiKey("codex")
-    if (!resolved.ok)
-      throw new Error("Add an enabled API client key in CoPo Settings first.")
-    return [
-      `[model_providers.${JSON.stringify(providerId)}]`,
-      'name = "CoPo"',
-      `base_url = ${JSON.stringify(CODEX_REVIEW_BASE_URL)}`,
-      `model_catalog_url = ${JSON.stringify(`${CODEX_REVIEW_BASE_URL}/models`)}`,
-      'wire_api = "responses"',
-      "requires_openai_auth = true",
-      "supports_websockets = false",
-      `http_headers = { "x-api-key" = ${JSON.stringify(resolved.key)} }`,
-      "",
-    ].join("\n")
-  }
+export function codexProvider(providerId: string): string {
   const helper = helperCommand()
   return [
     `[model_providers.${JSON.stringify(providerId)}]`,
@@ -140,17 +148,14 @@ export async function verifyCodexProvider(
   const provider = Provider.parse(
     valueAt(parseConfig(text), ["model_providers", selectedProvider(text)]),
   )
-  const key =
-    "auth" in provider ?
-      await readHelperKey(provider.auth.command, provider.auth.args)
-    : provider.http_headers["x-api-key"]
+  const key = await readHelperKey(provider.auth.command, provider.auth.args)
   let response: Response
   try {
     response = await sendProviderRequest(
       {
         baseUrl: provider.base_url,
         apiKey: key,
-        authType: "auth" in provider ? "authorization" : "x-api-key",
+        authType: "authorization",
       },
       `${provider.base_url}/responses`,
       {

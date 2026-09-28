@@ -53,7 +53,7 @@ import {
   ModelsListResponse,
   UpdateStatusResponse,
 } from "../src/lib/config/settings-types"
-import { SCENARIOS, type ScenarioId, defaultScenarioId } from "./ui-harness-fixtures"
+import { SCENARIOS, type Scenario, type ScenarioId, defaultScenarioId } from "./ui-harness-fixtures"
 
 const REPO = resolve(import.meta.dir, "..")
 const DIST = join(REPO, "shell/dist/ui")
@@ -269,7 +269,14 @@ async function handleApi(req: Request, path: string): Promise<Response> {
   if ((path === "/settings/api/apps/codex/toggle" ||
        path === "/settings/api/apps/codex-desktop/toggle") && method === "POST") {
     const request = await body()
-    return toggleApp(path.split("/")[4], request.enabled, request.automaticReview)
+    const scenario = SCENARIOS[activeScenario] as Scenario
+    if (request.enabled && scenario.codexToggle) {
+      const initialState = state
+      await Bun.sleep(scenario.codexToggle.delayMs ?? 0)
+      if (state !== initialState) return json({ error: { message: "Preview scenario changed." } }, 409)
+      if (scenario.codexToggle.error) return json({ error: { message: scenario.codexToggle.error } }, 409)
+    }
+    return toggleApp(path.split("/")[4], request.enabled)
   }
 
   // --- models refresh (just re-stamp loaded_at) ---
@@ -330,7 +337,7 @@ async function handleApi(req: Request, path: string): Promise<Response> {
   return json({ error: { message: `harness: unhandled ${method} ${path}` } }, 404)
 }
 
-function toggleApp(id: string, enabled: boolean, automaticReview?: boolean): Response {
+function toggleApp(id: string, enabled: boolean): Response {
   const apps = (state.apps as any).apps as Array<any>
   const app = apps.find((a) => a.id === id)
   if (!app) return json({ error: { message: "no such app" } }, 404)
@@ -340,7 +347,9 @@ function toggleApp(id: string, enabled: boolean, automaticReview?: boolean): Res
       if (entry.id !== "codex" && entry.id !== "codex-desktop") continue
       entry.enabled = enabled
       entry.routing.managed = enabled
-      entry.routing.automatic_review = enabled && (automaticReview ?? entry.routing.automatic_review ?? false)
+      entry.routing.automatic_review = enabled
+      entry.routing.review_update_required = false
+      entry.routing.restart_required = true
     }
   }
   return json(app)

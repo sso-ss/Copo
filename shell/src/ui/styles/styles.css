@@ -1935,9 +1935,11 @@ a:hover {
 }
 
 .app-card__control {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  gap: var(--space-2);
 }
 
 .app-card__pill {

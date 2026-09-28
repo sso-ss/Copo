@@ -78,7 +78,7 @@ build, quit and reopen CoPo to load it.
 | Other compatible API clients | Create an API key and configure the client's base URL | Request activity attributed to that key |
 | Copilot CLI | Coming soon | Not yet supported |
 
-Codex CLI and Desktop share a connection and API key. Remote/cloud Codex
+Codex CLI and Desktop share a connection and API key. Connect Codex also configures native automatic permission reviews through Copilot. Choose automatic approvals in Codex’s approval settings, then restart Codex and start a new local chat after connection changes. Remote/cloud Codex
 sessions are outside local task monitoring. Local task observers depend on
 client record formats; unknown or missing completion records do not trigger
 a celebration.

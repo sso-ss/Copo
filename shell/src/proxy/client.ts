@@ -141,6 +141,8 @@ export interface AppEntry {
     notice?: string
     uses_existing_setup?: boolean
     automatic_review?: boolean
+    review_update_required?: boolean
+    restart_required?: boolean
   }
 }
 
@@ -275,13 +277,13 @@ type Endpoint =
       kind: "codex-toggle"
       method: "POST"
       path: "/settings/api/apps/codex/toggle"
-      body: { enabled: boolean; model?: string; automaticReview?: boolean }
+      body: { enabled: boolean; model?: string }
     }
   | {
       kind: "codex-desktop-toggle"
       method: "POST"
       path: "/settings/api/apps/codex-desktop/toggle"
-      body: { enabled: boolean; model?: string; automaticReview?: boolean }
+      body: { enabled: boolean; model?: string }
     }
   | {
       kind: "claude-desktop-toggle"

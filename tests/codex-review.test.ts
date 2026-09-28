@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import { Hono } from "hono"
 
+import { readCodexGatewayModels } from "~/apps/codex/provider"
 import { createAuthMiddleware } from "~/lib/auth/request-auth"
 import { getConfig, writeConfig } from "~/lib/config/config"
 import { sendCodexGatewayRequest } from "~/lib/http/send-request"
@@ -204,6 +205,27 @@ describe("Codex review transport", () => {
 })
 
 describe("Codex routing isolation and cancellation", () => {
+  test("standalone connect discovers supported task models with only its local key", async () => {
+    upstream = () =>
+      Response.json({
+        apps: [
+          {
+            id: "codex",
+            routing: { available_models: ["gpt-6-luna", "gpt-6-astra"] },
+          },
+        ],
+      })
+    expect(await readCodexGatewayModels()).toEqual([
+      "gpt-6-luna",
+      "gpt-6-astra",
+    ])
+    expect(calls).toHaveLength(1)
+    expect(calls[0].url).toBe("http://127.0.0.1:4141/settings/api/apps")
+    expect(new Headers(calls[0].init.headers).get("authorization")).toBe(
+      "Bearer local-key",
+    )
+    expect(calls[0].init.redirect).toBe("error")
+  })
   test("client cancellation aborts upstream and stream cancellation propagates", async () => {
     let cancelled = false
     upstream = () =>
@@ -276,4 +298,99 @@ describe("Codex routing isolation and cancellation", () => {
     expect(headers.get("x-api-key")).toBe("local-key")
     expect(calls[0].init.redirect).toBe("error")
   })
+})
+
+describe("native automatic reviewer through the normal Copilot endpoint", () => {
+  const payload = {
+    model: "gpt-6-astra",
+    instructions: "Native Codex approval policy fixture",
+    input: [
+      {
+        role: "user",
+        content: [{ type: "input_text", text: "Review this fixture action" }],
+      },
+    ],
+    tools: [],
+    stream: true,
+    store: false,
+    text: {
+      format: {
+        type: "json_schema",
+        name: "codex_output_schema",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: { outcome: { type: "string", enum: ["allow", "deny"] } },
+          required: ["outcome"],
+          additionalProperties: false,
+        },
+      },
+    },
+  }
+  function nativeRequest() {
+    state.githubToken = "github-token"
+    state.models = {
+      object: "list",
+      data: [
+        {
+          id: "gpt-6-astra",
+          supported_endpoints: ["/responses"],
+          capabilities: { limits: {} },
+        },
+      ],
+    } as typeof state.models
+    return app().request("/v1/responses", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer local-key",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+  }
+  test.each(["allow", "deny"])(
+    "preserves native %s decisions and the native policy/schema",
+    async (outcome) => {
+      const body = `data: ${JSON.stringify({ type: "response.completed", response: { status: "completed", output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify({ outcome }) }] }] } })}\n\n`
+      upstream = () =>
+        new Response(body, { headers: { "content-type": "text/event-stream" } })
+      const response = await nativeRequest()
+      expect(response.status).toBe(200)
+      expect(await response.text()).toBe(body)
+      expect(calls).toHaveLength(1)
+      expect(calls[0].url).toBe("https://api.githubcopilot.com/responses")
+      const sent: unknown = JSON.parse(calls[0].init.body as string)
+      expect(sent).toMatchObject({
+        model: payload.model,
+        instructions: payload.instructions,
+        input: payload.input,
+        text: payload.text,
+        store: false,
+      })
+      expect(new Headers(calls[0].init.headers).get("authorization")).toBe(
+        "Bearer copilot-token",
+      )
+    },
+  )
+  test.each(["response.failed", "response.incomplete", "error"])(
+    "keeps native reviewer %s events as failures",
+    async (type) => {
+      const body = `data: ${JSON.stringify({ type, response: { status: "failed" }, error: { message: "review failure" } })}\n\n`
+      upstream = () =>
+        new Response(body, { headers: { "content-type": "text/event-stream" } })
+      expect(await (await nativeRequest()).text()).toBe(body)
+      expect(calls).toHaveLength(1)
+    },
+  )
+  test.each([401, 403, 429, 503])(
+    "keeps HTTP %s review failures without fallback",
+    async (status) => {
+      upstream = () =>
+        new Response('{"error":{"message":"Review failed"}}', { status })
+      const response = await nativeRequest()
+      expect(response.ok).toBe(false)
+      expect(await response.text()).not.toContain('"outcome":"allow"')
+      expect(calls).toHaveLength(1)
+    },
+  )
 })

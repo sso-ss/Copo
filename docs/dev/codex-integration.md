@@ -1,15 +1,15 @@
 # Codex CLI and desktop routing
 
-Settings → Apps → Codex CLI and Desktop uses Configure and Disconnect for both clients.
+Settings → Apps → Codex CLI and Desktop uses **Connect Codex** and **Disconnect** for both clients. Connecting configures task routing and native automatic permission reviews through Copilot together. Existing connections that need the catalog configuration or a refresh show **Update connection**.
 It detects the CLI on PATH and in common install locations, as well as supported
 macOS desktop installs. Install either client and connect your account in CoPo
 before configuring routing. Apps uses the model saved in your Codex
 configuration without displaying or changing it. If that model is missing or
 unsupported, configure a supported model in Codex and try again.
 
-Enable checks the command-backed key helper and sends a short, non-stored
-Responses request through `http://127.0.0.1:4141/v1`. This request can consume
-account quota. Only a completed response allows the config write. Failure
+Connect checks the command-backed key helper and sends short, non-stored
+Responses requests for the task model and Astra reviewer through `http://127.0.0.1:4141/v1`. These checks can consume
+Copilot quota. Only completed responses allow the config write. Failure
 leaves Codex's config unchanged. Start a new Codex session after toggling;
 running sessions retain their configuration.
 
@@ -82,16 +82,16 @@ setting in a terminal does not change an app launched from Finder.
 
 The toggle is serialized within the Maximal process. Repeated enable/disable
 does not duplicate config or replace the original restoration metadata. An
-already-enabled, unchanged selection does not send another verification request.
+already-enabled connection with current catalog metadata does not send another verification request.
 
 ## Authentication reference
 
 Codex's [official configuration reference](https://developers.openai.com/codex/config-reference/)
 documents `model_providers.<id>.auth.command`, `auth.args`, `auth.timeout_ms`,
 and `auth.refresh_interval_ms`. Command auth must not be combined with
-`env_key`, `experimental_bearer_token`, or `requires_openai_auth`. The default
-integration writes none of these competing authentication settings. The optional
-automatic-review setup uses `requires_openai_auth` instead of command auth.
+`env_key`, `experimental_bearer_token`, or `requires_openai_auth`. The
+integration writes none of these competing authentication settings. Tasks and
+reviewer requests both use command authentication and the normal `/v1` endpoint.
 
 ## Validation scope
 
@@ -102,81 +102,121 @@ development checks do not change the developer's Codex configuration.
 
 ## Automatic approval compatibility
 
-GitHub Copilot does not serve `codex-auto-review`. The default command-auth
-integration therefore cannot run Codex permission reviews. Settings → Apps →
-Codex now offers **Set up automatic reviews** as a separate, explicit choice.
-It keeps regular tasks on Copilot while forwarding the exact review model to
-OpenAI through the user's normal Codex ChatGPT login.
+**Connect Codex includes native Copilot reviewer configuration.** There is no
+separate review setup or ChatGPT connection. CoPo does not enable automatic
+approvals: choose that in Codex's existing approval settings. It leaves
+`approval_policy`, `approvals_reviewer`, sandbox settings, `review_model`, and
+Codex's native review policy untouched.
 
-### Routing and authentication
+Codex CLI 0.157.1 supports `auto_review_model_override` on task-model metadata
+loaded at startup with `model_catalog_json`. Connect sets this field to
+`gpt-6-astra` on **every catalog entry currently supported by Copilot's Responses
+API**, including Luna, Sol, and Astra when available. Switching between those
+models therefore keeps reviewer routing. CoPo never aliases `codex-auto-review`,
+invents a review decision, or substitutes another reviewer after a failure.
+A model absent from the native/custom catalog cannot be connected until suitable
+Codex metadata is available; CoPo does not fabricate model instructions.
 
-- The optional provider uses `http://127.0.0.1:4141/codex/v1`,
-  `requires_openai_auth = true`, and `supports_websockets = false`.
-- Codex supplies its ChatGPT bearer using the documented proxy authentication
-  flow. CoPo never opens private login files or saves that bearer. Platform API
-  key logins are not supported by this setup; setup requires a ChatGPT login.
-- A separate `x-api-key` authenticates the local CoPo connection. In this mode
-  only, CoPo writes its local key into the private, atomically saved Codex
-  configuration (including the managed restoration block). This replaces the
-  default mode's command helper. Rotate a local key by configuring Codex again.
-- `/codex/v1` always requires an enabled CoPo key, including when the generic
-  endpoint's “block unknown connections” setting is off. A CoPo key cannot be
-  used as the upstream bearer.
-- `/codex/v1/models` forwards the genuine Codex catalog, retaining hidden
-  reviewer entries and policy metadata. It can advertise models unavailable on
-  Copilot; ordinary task requests are still validated against Copilot's catalog.
-- Only the exact `codex-auto-review` model branches to OpenAI, before tool
-  rewriting, model normalization, prompt logging, compaction, or usage capture.
-  Other models use the existing Copilot handler and its GitHub authentication.
-- Review payload bytes, status codes, and stream events pass through unchanged.
-  Errors, timeouts, cancellations, and denials never become approvals or trigger
-  another model. Review requests do not enter Copilot usage accounting.
-- Request headers are allowlisted. CoPo keys, GitHub tokens, and cookies are not
-  forwarded to OpenAI; ChatGPT credentials are not forwarded to Copilot.
-  Upstream redirects are rejected. Review transport has a 120-second bound and
-  propagates the incoming request's cancellation.
+### Catalog discovery and verification
 
-### Setup and restoration
+Connect reads each detected CLI/Desktop binary's version and its offline
+`codex debug models --bundled` catalog in an isolated temporary Codex home and
+workspace. It uses the newest installed client's bundle as the base. It then
+asks **every detected client** to load the proposed `model_catalog_json` with
+an unauthenticated local provider and checks that the native output retains
+all expected reviewer overrides. These checks neither load user credentials
+nor contact ChatGPT. An old or incompatible binary, invalid catalog, unavailable
+Astra reviewer, or failed task/reviewer connectivity check stops configuration
+before the user's settings change.
 
-Setup explains that review context goes to OpenAI and may consume Codex quota.
-It checks the selected Copilot model, the live Codex catalog, and a minimal
-non-stored `codex-auto-review` response before saving. A temporary loopback
-callback receives authentication through `codex debug models`; it uses a random
-path, never prints secrets, and closes afterward. A cached catalog alone cannot
-pass the check. No saved Codex settings change if a check fails.
+This metadata field is version-dependent, not a stable public configuration
+contract. Connect validates actual client support rather than assuming that a
+version number guarantees it. A client binary change, changed custom catalog,
+or newly supported model missing an override makes Settings offer **Update
+connection**. Updating rebuilds and revalidates the snapshot; it never rewrites
+settings in the background. If a Codex update is incompatible, the previous
+configuration is retained and the error requests an updated compatible client.
 
-Switching review mode replaces only an intact managed provider block. It keeps
-the restore point from the original Configure operation, preserves later user
-edits, and refuses to adopt an edited provider. **Disconnect automatic reviews**
-returns to command authentication while keeping task routing on Copilot.
-**Disconnect** restores the pre-CoPo configuration using the existing ownership
-rules. The API accepts `{ enabled: true, automaticReview: true | false }`;
-omitting `automaticReview` preserves the current mode. This setup does not
-change approval policy or the user's automatic/manual approval preference.
+### Ownership, custom catalogs, and restoration
 
-Restart Codex and create a new local chat after changing this setup. Existing
-chats can retain their earlier provider. A connection check is not evidence of
-an end-to-end automatic approval decision.
+- A complete catalog copy is saved privately under
+  `$CODEX_HOME/copo-catalogs/<content-hash>.json`. The config points to its
+  absolute path. Each snapshot is immutable; new content gets a new file.
+- Existing custom catalogs, including manually installed review catalogs, are
+  read and copied, never rewritten. Custom root fields and per-model metadata
+  take precedence over the bundled values; new bundled entries and missing
+  fields are retained. The reviewer field is changed only for supported task
+  entries. Custom nested values remain intact rather than being reconstructed.
+  On refresh, the original custom source remains authoritative; users maintain
+  intentional custom policy/instruction overrides when updating Codex.
+- A separate marked block records the exact original catalog statement,
+  snapshot digest, original custom source, client fingerprints, and covered
+  task models. Repeated connection updates keep the first restore point.
+- Later edits to the selected catalog path or generated snapshot are not
+  overwritten. Disconnect removes ownership while retaining an edited selection
+  or edited snapshot. Otherwise it restores the exact original catalog statement
+  (or removes the setting if none existed), together with the existing provider
+  and observer-hook restoration rules. A manually installed catalog is therefore
+  restored on disconnect.
+- Snapshots are retained after refresh/disconnect because another profile or a
+  running client may still reference them. Failed commits can leave an unused
+  private snapshot, but never a config pointer to a partial file. Publication
+  refuses existing mismatched files and symlinks. Config writes are atomic and
+  reject concurrent edits; custom sources and client fingerprints are checked
+  again immediately before commit.
 
-### Evidence and limitations
+### Existing installations and API compatibility
 
-Verified with Codex CLI 0.157.1 on September 26, 2026:
+An intact older command-auth connection can be updated directly. An intact
+legacy ChatGPT-review provider is replaced with normal `copo-app` command auth
+and `/v1` during the same operation, retaining the original disconnect restore
+point. Edited providers are not adopted. Authentication files and the CoPo key
+store are not rewritten. The legacy `/codex/v1` transport remains available for
+older running sessions until they restart, but new connections never select it.
 
-- The [official authentication guide](https://developers.openai.com/codex/auth/)
-  documents using `requires_openai_auth` to pass normal Codex authentication
-  through an LLM proxy.
-- The [official configuration schema](https://developers.openai.com/codex/config-schema.json)
-  provides provider headers and a custom model catalog URL. `review_model`
-  controls code review, not permission approval; no separate permission-review
-  provider field was found. The integration does not change either review policy
-  or reviewer model metadata.
-- A live probe using normal ChatGPT sign-in received HTTP 200 and a completed
-  response from the genuine `codex-auto-review` model.
-- The fixed backend `https://chatgpt.com/backend-api/codex` was verified against
-  the installed client and the live probe. It is a Codex client backend, **not a
-  separately documented public Platform API contract**; future client/backend
-  changes may require an integration update.
-- Automated route tests cover authentication, exact matching, unchanged
-  payloads/catalogs, failures, denials, cancellation, and normal Copilot routing.
-  A real automatic permission decision in a restarted desktop chat still needs
-  verification. Building source does not update an installed desktop app.
+The Settings API accepts `{ enabled: true, model?: string }`. The old
+`automaticReview` flag is accepted but ignored for compatibility: every connect
+configures native reviews; approval preference belongs to Codex. Responses
+include `routing.automatic_review` (configuration readiness, not permission to
+auto-approve), `review_update_required`, and mutation-only `restart_required`.
+The Codex CLI command uses the same connection implementation.
+
+**Restart Codex and start a new local chat after connecting, updating, or
+disconnecting.** Settings and the CLI show restart guidance
+when the connection changes. A running chat can retain its startup catalog,
+provider, and model. A successful connection check establishes connectivity,
+not a completed automatic approval decision.
+
+### Evidence and validation
+
+Native runtime tests using Luna tasks and an Astra reviewer passed real Copilot
+approval and denial decisions, and a review transport failure remained a
+failure. The user also verified a real Codex Desktop approval after restarting
+the installed configuration. See the
+[September 27 investigation](../../research_log/2026-09-27_codex-copilot-auto-review.md).
+These results do not claim safety equivalence with a specialized reviewer or
+coverage of every approval category and managed-policy combination.
+
+Relevant development checks use temporary configuration and test credentials:
+
+```sh
+bun test tests/codex-connect.test.ts tests/codex-desktop.test.ts tests/codex-review.test.ts tests/apps-route.test.ts tests/apps-cli.test.ts tests/i18n-catalog-parity.test.ts
+bun test ./shell/src/ui/features/apps/AppCard.test.tsx
+COPO_TEST_CODEX_EXECUTABLE=/absolute/path/to/codex bun test tests/codex-catalog-runtime.test.ts
+```
+
+The opt-in final check validates the actual installed native catalog loader
+offline in a temporary home; it does not change the installed configuration or
+send a live review. Route tests preserve native policies, schemas, decisions,
+HTTP errors, and failure events on `/v1`, without fallback. Building this source
+does not update the installed CoPo app.
+
+For visual checks, build the UI and run
+`bun run scripts/ui-harness.ts --port 4749`.
+The harness uses in-memory fixtures and never touches the installed
+CoPo or Codex configuration. Its scenario menu includes a delayed Codex
+connection, an existing connection needing an update, and an update failure.
+The five-second delay exposes the disabled controls; failed updates retain the
+saved connection. Collapse the fixture controls to inspect the card at the
+600 × 560 minimum size, and use Appearance and Language to check both themes
+and translated text.

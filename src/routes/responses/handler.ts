@@ -198,7 +198,7 @@ function getResponsesModelError(
         error: {
           message:
             modelId === "codex-auto-review" ?
-              'Codex\'s automatic approval model "codex-auto-review" is not available through CoPo. The approval review could not run. Set up automatic reviews in CoPo Settings → Apps, or use manual approval in Codex.'
+              'Codex\'s automatic approval model "codex-auto-review" is not available through CoPo. The approval review could not run. Update the Codex connection in CoPo Settings → Apps, then restart Codex and start a new local chat. You can choose manual approval in Codex.'
             : `Model "${modelId}" is not available through CoPo. Choose a model listed by /v1/models.`,
           type: "invalid_request_error",
           code: "model_not_found",
