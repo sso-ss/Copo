@@ -54,6 +54,7 @@ import {
   UpdateStatusResponse,
 } from "../src/lib/config/settings-types"
 import { SCENARIOS, type Scenario, type ScenarioId, defaultScenarioId } from "./ui-harness-fixtures"
+import { usageFixture } from "./ui-harness-usage"
 
 const REPO = resolve(import.meta.dir, "..")
 const DIST = join(REPO, "shell/dist/ui")
@@ -422,6 +423,8 @@ function serve(): ReturnType<typeof Bun.serve> {
           })
         }
 
+        const usage = req.method === "GET" ? usageFixture(url, activeScenario) : null
+        if (usage) return json(usage)
         if (path === "/settings/api/events") return serveEvents()
         if (path.startsWith("/settings/api/")) {
           const response = await handleApi(req, path)
@@ -446,12 +449,12 @@ function serve(): ReturnType<typeof Bun.serve> {
   }
 }
 
-serve()
+const server = serve()
 
 console.error(
-  `\n⚗  UI harness (mock sidecar) on http://127.0.0.1:${PORT}\n` +
-    `   settings  → http://127.0.0.1:${PORT}/ui/settings/\n` +
-    `   dashboard → http://127.0.0.1:${PORT}/ui/dashboard/\n` +
+  `\n⚗  UI harness (mock sidecar) on http://127.0.0.1:${server.port}\n` +
+    `   settings  → http://127.0.0.1:${server.port}/ui/settings/\n` +
+    `   dashboard → http://127.0.0.1:${server.port}/ui/dashboard/\n` +
     `   scenario  → "${activeScenario}" (switch live from the ⚗ overlay)\n` +
     `   no backend touched; fixtures validated against settings-types.ts\n`,
 )

@@ -67,3 +67,10 @@ bun run app:ui
 `shell/src/main.ts`'s `safeInvoke()` already swallows Tauri-only `invoke()`
 calls when running in a plain browser, so the "Reveal in Finder" buttons
 no-op gracefully — everything else works.
+
+## QA bot
+
+`QA_MODEL=<local CoPo model> bun run qa` runs backend, code, and browser checks,
+then reviews source and screenshots through local CoPo. Reports are saved under
+`reports/qa/`. Add `--publish --repo sso-ss/Copo` to file reproduced failures.
+See [QA bot setup and coverage](dev/qa-bot.md) for prerequisites and report modes.
