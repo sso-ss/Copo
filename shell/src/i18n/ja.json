@@ -320,6 +320,7 @@
   "companion-lost": "接続が切れました",
   "companion-starting": "CoPo を起動中…",
   "companion-working": "作業中",
+  "companion-working-count": "作業中 ({n, number})",
   "companion-ready": "ゲートウェイ準備完了",
   "companion-no-tools": "ツール未設定",
   "companion-connected": "接続済み",

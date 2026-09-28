@@ -134,6 +134,15 @@ export class CompanionState {
     return (this.activity?.activity.reduce((sum, entry) => sum + entry.activeRequests, 0) ?? 0) + this.tasks.running;
   }
 
+  get workingCount(): number {
+    const activeTasks = this.tasks.forConnection().filter((task) => task.status === "running" || task.status === "waiting");
+    const taskConnections = new Set(activeTasks.map((task) => task.connectionId));
+    const taskKeys = new Set(this.data?.connections.filter((connection) => taskConnections.has(connection.id)).map((connection) => connection.apiKeyId));
+    // A task's requests (including child work) are already represented by its
+    // top-level task. Use request counts only for routes without active tasks.
+    return this.tasks.running + (this.activity?.activity.reduce((sum, entry) => sum + (taskKeys.has(entry.apiKeyId) ? 0 : entry.activeRequests), 0) ?? 0);
+  }
+
   connected(connection: CompanionConnection): boolean {
     return this.available && this.data?.gateway === "ready" && !!this.data.account && connection.configured
       && connection.apiKeyId !== null && this.verified.has(connection.apiKeyId);

@@ -320,6 +320,7 @@
   "companion-lost": "Соединение потеряно",
   "companion-starting": "Запуск CoPo…",
   "companion-working": "В работе",
+  "companion-working-count": "В работе ({n, number})",
   "companion-ready": "Шлюз готов",
   "companion-no-tools": "Нет настроенных инструментов",
   "companion-connected": "Подключено",

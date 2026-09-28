@@ -320,6 +320,7 @@
   "companion-lost": "连接已断开",
   "companion-starting": "正在启动 CoPo…",
   "companion-working": "正在工作",
+  "companion-working-count": "正在工作 ({n, number})",
   "companion-ready": "网关已就绪",
   "companion-no-tools": "尚未配置工具",
   "companion-connected": "已连接",

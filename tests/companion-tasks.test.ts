@@ -6,6 +6,15 @@ import { TaskTracker } from "~/lib/companion/task-tracker"
 
 import { CompanionState } from "../shell/src/companion/state"
 
+const activity = (apiKeyId: string, activeRequests: number) => ({
+  apiKeyId,
+  activeRequests,
+  status: "working" as const,
+  lastStartedAt: 1,
+  lastFinishedAt: null,
+  lastStatusCode: null,
+})
+
 function fixture() {
   const state = new CompanionState()
   const events: Array<TaskEvent> = []
@@ -59,6 +68,26 @@ function fixture() {
 }
 
 describe("whole-task companion state", () => {
+  test("working counts top-level tasks once, with requests as a per-route fallback", () => {
+    const { state, send } = fixture()
+    if (!state.activity) throw new Error("Missing activity snapshot")
+    state.activity.activity = [activity("codex", 2), activity("custom", 1)]
+    expect(state.workingCount).toBe(3)
+    send("started", 10)
+    send("started", 20, { taskId: "codex:child", parentTaskId: "codex:turn" })
+    expect(state.workingCount).toBe(2)
+    send("started", 30, { taskId: "codex:other" })
+    expect(state.workingCount).toBe(3)
+    state.activity.activity = []
+    expect(state.workingCount).toBe(2)
+    send("waiting", 40, { taskId: "codex:other" })
+    expect(state.workingCount).toBe(1)
+    send("completed", 50, { taskId: "codex:child" })
+    send("completed", 60)
+    expect(state.workingCount).toBe(0)
+    expect(state.display(60).pose).toBe("approval")
+  })
+
   test("request gaps stay focused and an authoritative finish holds happiness for ten seconds", () => {
     const { state, send } = fixture()
     send("started", 10)

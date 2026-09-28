@@ -320,6 +320,7 @@
   "companion-lost": "Connection lost",
   "companion-starting": "Starting CoPo…",
   "companion-working": "Working",
+  "companion-working-count": "Working ({n, number})",
   "companion-ready": "Gateway ready",
   "companion-no-tools": "No tools configured",
   "companion-connected": "Connected",

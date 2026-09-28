@@ -138,7 +138,9 @@ element("primary").addEventListener("click", () => void settings(state.data?.acc
 function paint(): void {
   if (!isPanel) element("hint").hidden = hintSeen || !state.available || state.configured > 0 || state.running > 0;
   const display = state.display(Date.now());
-  const status = t(artFailed ? "companion-art-error" : display.key);
+  const count = state.workingCount;
+  const key = display.key === "companion-working" && count > 1 ? "companion-working-count" : display.key;
+  const status = t(artFailed ? "companion-art-error" : key, { n: count });
   element("pet-status").textContent = status;
   element("panel-status").textContent = status;
   cat.setAttribute("aria-label", t("companion-cat-label", { status }));
