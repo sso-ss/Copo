@@ -62,10 +62,12 @@ for (const id of ["codex", "codex-desktop"] as const) {
         throw httpError("Expected { enabled: boolean, model?: string }", 400)
       const app = getApp(id)
       if (!app) throw httpError("App not found", 404)
+      let restartRequired = false
       try {
-        await (parsed.data.enabled ?
+        const result = await (parsed.data.enabled ?
           app.enable({ model: parsed.data.model })
         : app.disable())
+        restartRequired = result.restartRequired ?? false
       } catch (error) {
         throw httpError(
           error instanceof Error ?
@@ -74,7 +76,9 @@ for (const id of ["codex", "codex-desktop"] as const) {
           409,
         )
       }
-      return jsonApp(c, await app.getDetails())
+      const details = await app.getDetails()
+      if (details.routing) details.routing.restart_required = restartRequired
+      return jsonApp(c, details)
     } catch (error) {
       return forwardError(c, error)
     }

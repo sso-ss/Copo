@@ -18,6 +18,7 @@ import { humanize } from "../api-clients/humanize";
 export interface MutationResult {
   ok: boolean;
   error?: string;
+  restartRequired?: boolean;
 }
 
 interface UseApps {
@@ -135,7 +136,7 @@ export function useApps(): UseApps {
           path: "/settings/api/apps/codex/toggle",
           body: { enabled },
         },
-        { timeoutMs: 45000 },
+        { timeoutMs: 240000 },
       );
       if (!result.ok) {
         const message = humanize(result.error);
@@ -146,7 +147,7 @@ export function useApps(): UseApps {
       setError(null);
       splice(result.data);
       await refresh();
-      return { ok: true };
+      return { ok: true, restartRequired: result.data.routing?.restart_required };
     },
     [refresh, splice],
   );

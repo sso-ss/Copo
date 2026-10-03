@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+
+import { t } from "../../../i18n";
 
 import type { AppEntry } from "../../../proxy/client";
 import { Button } from "../../components/Button";
@@ -51,6 +53,11 @@ export function AppCard({
   const [copied, setCopied] = useState(false);
   const [rescanning, setRescanning] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const pending = useRef(false);
+  const [connecting, setConnecting] = useState(false);
+  const [restartRequired, setRestartRequired] = useState(false);
+  const isCodex = app.id === "codex" || app.id === "codex-desktop";
+  const needsUpdate = isCodex && app.enabled && app.routing?.automatic_review !== true;
   const [toggleError, setToggleError] = useState<string | null>(null);
   // Windows-only: disabling Claude Code routing doesn't take effect in an
   // already-running session (Claude Code reads its base URL at launch on
@@ -93,13 +100,20 @@ export function AppCard({
   // Intercept only the Claude-Code-disable-on-Windows case; everything else
   // (enabling, other apps, macOS) toggles straight through.
   const toggle = async (next: boolean): Promise<void> => {
+    if (pending.current) return;
+    pending.current = true;
     setToggling(true);
+    setConnecting(next);
     setToggleError(null);
     try {
       const result = await onToggle(next);
       if (!result.ok)
-        setToggleError(result.error ?? "Could not change routing.");
+        setToggleError(result.error ?? t("apps-configuration-error"));
+      else if (result.restartRequired) setRestartRequired(true);
+    } catch {
+      setToggleError(t("apps-configuration-error"));
     } finally {
+      pending.current = false;
       setToggling(false);
     }
   };
@@ -131,6 +145,21 @@ export function AppCard({
         <div className="app-card__control">
           {comingSoon ? (
             <span className="chip app-card__pill">Coming soon</span>
+          ) : isCodex ? (
+            <>
+              {needsUpdate && !notInstalled && (
+                <Button variant="primary" size="sm" disabled={toggling}
+                  onClick={() => void toggle(true)}>
+                  {t(toggling && connecting ? "apps-configuring" : "apps-codex-update")}
+                </Button>
+              )}
+              <Switch
+                checked={app.enabled}
+                disabled={toggling || (notInstalled && !app.enabled)}
+                onCheckedChange={handleToggle}
+                label={toggling ? t("common-working") : app.enabled ? "On" : "Off"}
+              />
+            </>
           ) : offerInstall ? null : (
             <Switch
               checked={app.enabled}
@@ -142,6 +171,15 @@ export function AppCard({
         </div>
       </header>
 
+      {isCodex && (
+        <div className="app-card__install">
+          <p className="app-card__hint">{t(needsUpdate ? "apps-codex-update-help"
+            : app.enabled ? "apps-codex-review-configured" : "apps-codex-approval-help")}</p>
+          {(app.enabled || restartRequired) && (
+            <p className="app-card__hint" role="status">{t("apps-codex-review-restart")}</p>
+          )}
+        </div>
+      )}
       {(app.id === "codex" || app.id === "codex-desktop") && app.routing &&
         (app.routing.notice || (app.routing.managed && !app.enabled)) && (
         <div className="app-card__install">

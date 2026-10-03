@@ -8,6 +8,7 @@ import { state } from "~/lib/runtime-state/state"
 
 import type { ClientApp } from "../index"
 
+import { COPILOT_REVIEW_MODEL } from "./catalog-runtime"
 import {
   codexConfigPath,
   chooseProviderId,
@@ -22,9 +23,21 @@ import {
 } from "./config"
 import { detectCodexDesktop } from "./desktop-detect"
 import { detectCodex } from "./detect"
-import { codexProvider, verifyCodexProvider } from "./provider"
+import {
+  codexProvider,
+  readCodexGatewayModels,
+  verifyCodexProvider,
+} from "./provider"
+import {
+  prepareReviewCatalog,
+  reviewCatalogIsCurrent,
+  withoutReviewCatalog,
+  writeReviewCatalog,
+} from "./review-catalog"
 
 const routingLock = new Set<string>()
+const EXISTING_SETUP_NOTICE =
+  "Your existing Codex setup already routes through Maximal. Configure uses separate managed settings; Disconnect restores your existing setup."
 
 async function mutateRouting<Result>(
   operation: () => Promise<Result>,
@@ -54,22 +67,70 @@ function availableModels(): Array<string> {
 
 function disableRouting(): boolean {
   const before = readCodexConfig()
-  const after = revertCodexConfig(before)
+  const after = withoutReviewCatalog(revertCodexConfig(before))
   writeCodexConfig(before, after)
   return before !== after
+}
+
+async function enableRouting(
+  options: Parameters<ClientApp["enable"]>[0],
+  installs: Array<AppInstall>,
+  verifyProvider: typeof verifyCodexProvider,
+): Promise<{ success: boolean; restartRequired: boolean }> {
+  const before = readCodexConfig()
+  const model = options?.model ?? configuredModel(before)
+  if (!model)
+    throw new Error(
+      "Set a model in your Codex configuration before enabling routing.",
+    )
+  const models =
+    state.models ? availableModels() : await readCodexGatewayModels()
+  if (!models.includes(model)) {
+    throw new Error(
+      "Your configured Codex model is not available through Maximal's Responses API. Set a supported model in your Codex configuration, then try again.",
+    )
+  }
+  const routingBase = before
+  const after = prepareCodexConfig(
+    routingBase,
+    codexProvider(chooseProviderId(routingBase)),
+    model,
+  )
+  // Already-current connections do not consume quota or rewrite snapshots.
+  const catalogWasCurrent = reviewCatalogIsCurrent(before, installs, models)
+  if (catalogWasCurrent && after === before) {
+    return { success: true, restartRequired: false }
+  }
+  const catalog = await prepareReviewCatalog(after, {
+    installs,
+    availableModels: models,
+    selectedModel: model,
+  })
+  const withCatalog = catalog.config
+  const changed = withCatalog !== before || !catalogWasCurrent
+  if (changed) {
+    await verifyProvider(after, model)
+    if (model !== COPILOT_REVIEW_MODEL)
+      await verifyProvider(after, COPILOT_REVIEW_MODEL)
+  }
+  writeReviewCatalog(catalog)
+  catalog.checkUnchanged()
+  writeCodexConfig(before, withCatalog)
+  return { success: true, restartRequired: changed }
 }
 
 interface CodexAppOptions {
   detectInstalls: () => Promise<Array<AppInstall>>
   installHint: AppInstallHint | null
+  verifyProvider?: typeof verifyCodexProvider
 }
 
-function createCodexApp(
+export function createCodexApp(
   id: "codex" | "codex-desktop",
   name: string,
-  options: CodexAppOptions,
+  optionsForApp: CodexAppOptions,
 ): ClientApp {
-  const { detectInstalls, installHint } = options
+  const { detectInstalls, installHint } = optionsForApp
   return {
     id,
     name,
@@ -85,15 +146,20 @@ function createCodexApp(
       let enabled = false
       let managed = false
       let model: string | null = null
+      let automaticReview = false
       let notice: string | undefined
       try {
         const text = readCodexConfig()
         managed = hasCodexRouting(text)
         enabled = isCodexEnabled(text)
+        automaticReview = reviewCatalogIsCurrent(
+          text,
+          installs,
+          availableModels(),
+        )
         model = configuredModel(text)
         if (hasUnmanagedProvider(text)) {
-          notice =
-            "Your existing Codex setup already routes through Maximal. This switch uses separate managed settings; switching it off restores your existing setup."
+          notice = EXISTING_SETUP_NOTICE
         }
       } catch (error) {
         notice =
@@ -114,43 +180,34 @@ function createCodexApp(
           model,
           available_models: availableModels(),
           managed,
+          automatic_review: automaticReview,
+          review_update_required: enabled && !automaticReview,
           notice,
+          uses_existing_setup: notice === EXISTING_SETUP_NOTICE,
         },
       }
     },
 
     enable(options) {
       return mutateRouting(async () => {
-        if (!(await this.detect()))
+        const installs = await detectInstalls()
+        if (installs.length === 0)
           throw new Error(
             "Install Codex CLI or Desktop first, then enable routing.",
           )
-        const before = readCodexConfig()
-        const model = options?.model ?? configuredModel(before)
-        if (!model)
-          throw new Error(
-            "Set a model in your Codex configuration before enabling routing.",
-          )
-        const models = availableModels()
-        if (models.length > 0 && !models.includes(model)) {
-          throw new Error(
-            "Your configured Codex model is not available through Maximal's Responses API. Set a supported model in your Codex configuration, then try again.",
-          )
-        }
-        const after = prepareCodexConfig(
-          before,
-          codexProvider(chooseProviderId(before)),
-          model,
+        return enableRouting(
+          options,
+          installs,
+          optionsForApp.verifyProvider ?? verifyCodexProvider,
         )
-        if (after === before) return { success: true }
-        await verifyCodexProvider(after, model)
-        writeCodexConfig(before, after)
-        return { success: true }
       })
     },
 
     disable() {
-      return mutateRouting(() => Promise.resolve({ success: disableRouting() }))
+      return mutateRouting(() => {
+        const changed = disableRouting()
+        return Promise.resolve({ success: changed, restartRequired: changed })
+      })
     },
 
     uninstall() {
@@ -171,14 +228,17 @@ function createCodexApp(
   }
 }
 
+async function detectInstalls(): Promise<Array<AppInstall>> {
+  return (await Promise.all([detectCodex(), detectCodexDesktop()])).flat()
+}
+
 export const codexApp = createCodexApp("codex", "Codex CLI and Desktop", {
-  detectInstalls: async () =>
-    (await Promise.all([detectCodex(), detectCodexDesktop()])).flat(),
+  detectInstalls,
   installHint: { method: "npm", command: "npm install -g @openai/codex" },
 })
 
 export const codexDesktopApp = createCodexApp(
   "codex-desktop",
   "Codex Desktop",
-  { detectInstalls: detectCodexDesktop, installHint: null },
+  { detectInstalls, installHint: null },
 )

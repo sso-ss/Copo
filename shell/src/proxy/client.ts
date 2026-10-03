@@ -138,6 +138,10 @@ export interface AppEntry {
     available_models: Array<string>
     managed: boolean
     notice?: string
+    uses_existing_setup?: boolean
+    automatic_review?: boolean
+    review_update_required?: boolean
+    restart_required?: boolean
   }
 }
 

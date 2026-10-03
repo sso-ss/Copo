@@ -379,6 +379,10 @@ export const AppEntry = z.object({
       available_models: z.array(z.string()),
       managed: z.boolean(),
       notice: z.string().optional(),
+      uses_existing_setup: z.boolean().optional(),
+      automatic_review: z.boolean().optional(),
+      review_update_required: z.boolean().optional(),
+      restart_required: z.boolean().optional(),
     })
     .optional(),
 })
@@ -394,6 +398,8 @@ export const ClaudeCodeToggleRequest = z.object({
 })
 export const CodexToggleRequest = z.object({
   enabled: z.boolean(),
+  // Accepted for old clients; reviewer setup belongs to every connection.
+  automaticReview: z.boolean().optional(),
   model: z.string().trim().min(1).max(200).optional(),
 })
 export type ClaudeCodeToggleRequest = z.infer<typeof ClaudeCodeToggleRequest>

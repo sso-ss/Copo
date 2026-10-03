@@ -110,6 +110,52 @@ describe("shared Codex routing restoration", () => {
     )
   })
 
+  test("review mode upgrades preserve the first restore point and later model edits", () => {
+    const enabled = prepareCodexConfig(original, provider, "test-model")
+    const reviewProvider =
+      provider.replace("4141/v1", "4141/codex/v1")
+      + "requires_openai_auth = true\n"
+    const edited = enabled.replace(
+      'model = "test-model"',
+      'model = "new-model"',
+    )
+    const upgraded = prepareCodexConfig(edited, reviewProvider, "new-model")
+    expect(isCodexEnabled(upgraded)).toBe(true)
+    expect(upgraded).toContain("requires_openai_auth = true")
+    const downgraded = prepareCodexConfig(upgraded, provider, "new-model")
+    expect(revertCodexConfig(downgraded)).toBe(
+      original.replace('model = "test-model"', 'model = "new-model"'),
+    )
+  })
+
+  test("review mode never adopts an edited provider", () => {
+    const enabled = prepareCodexConfig(original, provider, "test-model")
+    const edited = enabled.replace('name = "Maximal"', 'name = "User override"')
+    expect(() =>
+      prepareCodexConfig(
+        edited,
+        provider + "requires_openai_auth = true\n",
+        "test-model",
+      ),
+    ).toThrow("routing has changed")
+  })
+
+  test("review mode preserves user comments inside the managed block by refusing to overwrite it", () => {
+    const enabled = prepareCodexConfig(original, provider, "test-model")
+    const edited = enabled.replace(
+      'name = "Maximal"',
+      '# My provider note\nname = "Maximal"',
+    )
+    expect(() =>
+      prepareCodexConfig(
+        edited,
+        provider + "requires_openai_auth = true\n",
+        "test-model",
+      ),
+    ).toThrow("block was edited")
+    expect(revertCodexConfig(edited)).toContain("# My provider note")
+  })
+
   test("disabling preserves a managed provider still used by another profile", () => {
     const enabled = prepareCodexConfig(original, provider, "test-model")
     const edited =

@@ -17,6 +17,47 @@ const Provider = z.object({
   auth: z.object({ command: z.string(), args: z.array(z.string()) }),
 })
 
+/** Standalone CLI invocations have no in-process Copilot model cache. Read the
+ * running gateway's filtered task model list without touching GitHub auth. */
+export async function readCodexGatewayModels(): Promise<Array<string>> {
+  const key = resolveApiKey("codex")
+  if (!key.ok)
+    throw new Error(
+      "Add an enabled API client key in Maximal Settings before connecting Codex.",
+    )
+  try {
+    const response = await sendProviderRequest(
+      { baseUrl: CODEX_BASE_URL, apiKey: key.key, authType: "authorization" },
+      "http://127.0.0.1:4141/settings/api/apps",
+      { method: "GET", timeoutMs: 10000, redirect: "error" },
+    )
+    if (!response.ok) {
+      await response.body?.cancel()
+      throw new Error()
+    }
+    const result = z
+      .object({
+        apps: z.array(
+          z.object({
+            id: z.string(),
+            routing: z
+              .object({ available_models: z.array(z.string()) })
+              .optional(),
+          }),
+        ),
+      })
+      .parse(await response.json())
+    const models = result.apps.find((app) => app.id === "codex")?.routing
+      ?.available_models
+    if (!models?.length) throw new Error()
+    return models
+  } catch {
+    throw new Error(
+      "Could not read Maximal's supported Codex models. Start Maximal, connect your account, and try again.",
+    )
+  }
+}
+
 function helperCommand(): { command: string; args: Array<string> } {
   const executable = process.execPath
   const runtime = /^(?:bun|node)(?:\.exe)?$/iu.test(path.basename(executable))
